@@ -362,9 +362,7 @@ const App: React.FC = () => {
         <div 
           className={`relative w-full flex items-center justify-center select-none z-30 transition-all group`}
           style={{ 
-            height: '32px', 
-            marginTop: '-16px', 
-            marginBottom: '-16px',
+            height: '24px', 
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
@@ -375,30 +373,29 @@ const App: React.FC = () => {
             onMouseDown={startResizing}
             onTouchStart={startResizing}
             onPointerDown={startResizing}
-            className={`absolute w-full cursor-row-resize ${isResizing ? 'h-4 bg-indigo-600' : 'h-3 bg-slate-300 hover:bg-indigo-400 hover:h-4'} transition-all`}
+            className={`absolute w-full cursor-row-resize ${isResizing ? 'h-3 bg-indigo-600' : 'h-2 bg-slate-300 hover:bg-indigo-400 hover:h-3'} transition-all`}
           ></div>
           
           {/* Arrow buttons for quick positioning */}
-          <div className="relative flex items-center gap-2 bg-white px-2 py-1 rounded-full shadow-md border border-slate-200 z-40">
+          <div className="relative flex items-center gap-1 bg-white px-1.5 py-0.5 rounded-full shadow-sm border border-slate-200 z-40">
             {/* Up arrow - show more chat/notes (67% for Bible) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setSplitOffset(67);
               }}
-              className="p-1 hover:bg-slate-100 rounded transition-colors"
+              className="p-0.5 hover:bg-slate-100 rounded transition-colors"
               title="Show chat and notes (⅔ screen)"
             >
-              <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
               </svg>
             </button>
             
             {/* Drag indicator */}
             <div className="flex flex-col gap-0.5 px-1">
-              <div className="w-12 h-0.5 bg-slate-400 rounded"></div>
-              <div className="w-12 h-0.5 bg-slate-400 rounded"></div>
-              <div className="w-12 h-0.5 bg-slate-400 rounded"></div>
+              <div className="w-8 h-0.5 bg-slate-400 rounded"></div>
+              <div className="w-8 h-0.5 bg-slate-400 rounded"></div>
             </div>
             
             {/* Down arrow - maximize Bible (100%) */}
@@ -407,10 +404,10 @@ const App: React.FC = () => {
                 e.stopPropagation();
                 setSplitOffset(100);
               }}
-              className="p-1 hover:bg-slate-100 rounded transition-colors"
+              className="p-0.5 hover:bg-slate-100 rounded transition-colors"
               title="Maximize Bible reading"
             >
-              <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -428,20 +425,19 @@ const App: React.FC = () => {
             onPointerDown={startBottomResizing}
             className={`relative h-full flex items-center justify-center cursor-col-resize select-none z-30 transition-all group`}
             style={{ 
-              width: '32px', 
-              marginLeft: '-16px', 
-              marginRight: '-16px',
+              width: '24px', 
+              marginLeft: '-12px', 
+              marginRight: '-12px',
               touchAction: 'none',
               WebkitTouchCallout: 'none',
               WebkitUserSelect: 'none',
               userSelect: 'none'
             }}
           >
-            <div className={`absolute h-full ${isBottomResizing ? 'w-4 bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'w-3 bg-slate-300 hover:bg-indigo-400 hover:w-4'} transition-all`}></div>
-            <div className="relative flex flex-col gap-0.5 bg-white px-1 py-2 rounded-full shadow-md border border-slate-200 z-40">
-              <div className="w-0.5 h-12 bg-slate-400 rounded"></div>
-              <div className="w-0.5 h-12 bg-slate-400 rounded"></div>
-              <div className="w-0.5 h-12 bg-slate-400 rounded"></div>
+            <div className={`absolute h-full ${isBottomResizing ? 'w-3 bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'w-2 bg-slate-300 hover:bg-indigo-400 hover:w-3'} transition-all`}></div>
+            <div className="relative flex flex-col gap-0.5 bg-white px-0.5 py-1 rounded-full shadow-sm border border-slate-200 z-40">
+              <div className="w-0.5 h-8 bg-slate-400 rounded"></div>
+              <div className="w-0.5 h-8 bg-slate-400 rounded"></div>
             </div>
           </div>
 
