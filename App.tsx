@@ -374,11 +374,11 @@ const App: React.FC = () => {
             onMouseDown={startResizing}
             onTouchStart={startResizing}
             onPointerDown={startResizing}
-            className={`absolute w-full cursor-row-resize ${isResizing ? 'h-3 bg-indigo-500' : 'h-1 bg-slate-400 hover:bg-indigo-400 hover:h-2'} transition-all shadow-sm`}
+            className={`absolute w-full cursor-row-resize ${isResizing ? 'h-4 bg-indigo-500 shadow-lg' : 'h-2 bg-slate-600 hover:bg-indigo-500 hover:h-3 shadow'} transition-all`}
           ></div>
           
           {/* Arrow buttons for quick positioning */}
-          <div className="relative flex items-center gap-1 bg-white/90 px-1.5 py-0.5 rounded-full shadow-md border border-slate-300 z-40">
+          <div className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-lg border border-slate-400 z-40">
             {/* Up arrow - show more chat/notes (67% for Bible) */}
             <button
               onClick={(e) => {
@@ -395,8 +395,8 @@ const App: React.FC = () => {
             
             {/* Drag indicator */}
             <div className="flex flex-col gap-0.5 px-1">
-              <div className="w-8 h-0.5 bg-slate-400 rounded"></div>
-              <div className="w-8 h-0.5 bg-slate-400 rounded"></div>
+              <div className="w-8 h-0.5 bg-slate-600 rounded"></div>
+              <div className="w-8 h-0.5 bg-slate-600 rounded"></div>
             </div>
             
             {/* Down arrow - maximize Bible (100%) */}
