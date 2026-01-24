@@ -372,9 +372,9 @@ const App: React.FC = () => {
         >
           {/* Visible divider bar */}
           <div 
-            className={`absolute w-full ${isResizing ? 'h-3 bg-indigo-500' : 'h-1 bg-slate-500 hover:bg-indigo-500 hover:h-2'} transition-all`}
+            className={`absolute w-full ${isResizing ? 'h-2 bg-slate-400' : 'h-1 bg-slate-300 hover:bg-slate-400 hover:h-1.5'} transition-all`}
             style={{
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
             }}
           ></div>
           
@@ -386,7 +386,7 @@ const App: React.FC = () => {
           ></div>
           
           {/* Arrow buttons for quick positioning */}
-          <div className="relative flex items-center gap-0.5 bg-white/90 px-1.5 py-0.5 rounded-full shadow-sm border border-slate-300 z-40">
+          <div className="relative flex items-center gap-0.5 bg-white/95 px-1.5 py-0.5 rounded-full shadow-sm border border-slate-200 z-40">
             {/* Up arrow - show more chat/notes (67% for Bible) */}
             <button
               onClick={(e) => {
@@ -403,8 +403,8 @@ const App: React.FC = () => {
             
             {/* Drag indicator */}
             <div className="flex flex-col gap-px px-0.5">
-              <div className="w-4 h-px bg-slate-400"></div>
-              <div className="w-4 h-px bg-slate-400"></div>
+              <div className="w-4 h-px bg-slate-300"></div>
+              <div className="w-4 h-px bg-slate-300"></div>
             </div>
             
             {/* Down arrow - maximize Bible (100%) */}
@@ -442,9 +442,9 @@ const App: React.FC = () => {
           >
             {/* Visible divider bar */}
             <div 
-              className={`absolute h-full ${isBottomResizing ? 'w-3 bg-indigo-500' : 'w-1 bg-slate-500 hover:bg-indigo-500 hover:w-2'} transition-all`}
+              className={`absolute h-full ${isBottomResizing ? 'w-2 bg-slate-400' : 'w-1 bg-slate-300 hover:bg-slate-400 hover:w-1.5'} transition-all`}
               style={{
-                boxShadow: '1px 0 3px rgba(0, 0, 0, 0.2)'
+                boxShadow: '1px 0 2px rgba(0, 0, 0, 0.1)'
               }}
             ></div>
             
@@ -455,9 +455,9 @@ const App: React.FC = () => {
               className="absolute w-full h-full cursor-col-resize"
             ></div>
             
-            <div className="relative flex flex-row gap-px bg-white/90 px-0.5 py-1 rounded-full shadow-sm border border-slate-300 z-40">
-              <div className="w-px h-4 bg-slate-400"></div>
-              <div className="w-px h-4 bg-slate-400"></div>
+            <div className="relative flex flex-row gap-px bg-white/95 px-0.5 py-1 rounded-full shadow-sm border border-slate-200 z-40">
+              <div className="w-px h-4 bg-slate-300"></div>
+              <div className="w-px h-4 bg-slate-300"></div>
             </div>
           </div>
 
