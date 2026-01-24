@@ -386,26 +386,25 @@ const App: React.FC = () => {
           ></div>
           
           {/* Arrow buttons for quick positioning */}
-          <div className="relative flex items-center gap-1 bg-white px-2 py-0.5 rounded-full shadow-md border border-slate-400 z-40">
+          <div className="relative flex items-center gap-0.5 bg-white/90 px-1.5 py-0.5 rounded-full shadow-sm border border-slate-300 z-40">
             {/* Up arrow - show more chat/notes (67% for Bible) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setSplitOffset(67);
               }}
-              className="p-0.5 hover:bg-slate-100 rounded transition-colors"
+              className="p-0.5 hover:bg-slate-200 rounded transition-colors"
               title="Show chat and notes (⅔ screen)"
             >
-              <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              <svg className="w-2.5 h-2.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
               </svg>
             </button>
             
             {/* Drag indicator */}
-            <div className="flex flex-col gap-0.5 px-1">
-              <div className="w-6 h-0.5 bg-slate-500 rounded"></div>
-              <div className="w-6 h-0.5 bg-slate-500 rounded"></div>
-              <div className="w-6 h-0.5 bg-slate-500 rounded"></div>
+            <div className="flex flex-col gap-px px-0.5">
+              <div className="w-4 h-px bg-slate-400"></div>
+              <div className="w-4 h-px bg-slate-400"></div>
             </div>
             
             {/* Down arrow - maximize Bible (100%) */}
@@ -414,11 +413,11 @@ const App: React.FC = () => {
                 e.stopPropagation();
                 setSplitOffset(100);
               }}
-              className="p-0.5 hover:bg-slate-100 rounded transition-colors"
+              className="p-0.5 hover:bg-slate-200 rounded transition-colors"
               title="Maximize Bible reading"
             >
-              <svg className="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg className="w-2.5 h-2.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
           </div>
@@ -456,10 +455,9 @@ const App: React.FC = () => {
               className="absolute w-full h-full cursor-col-resize"
             ></div>
             
-            <div className="relative flex flex-row gap-0.5 bg-white px-1 py-2 rounded-lg shadow-md border border-slate-400 z-40">
-              <div className="w-0.5 h-6 bg-slate-500 rounded"></div>
-              <div className="w-0.5 h-6 bg-slate-500 rounded"></div>
-              <div className="w-0.5 h-6 bg-slate-500 rounded"></div>
+            <div className="relative flex flex-row gap-px bg-white/90 px-0.5 py-1 rounded-full shadow-sm border border-slate-300 z-40">
+              <div className="w-px h-4 bg-slate-400"></div>
+              <div className="w-px h-4 bg-slate-400"></div>
             </div>
           </div>
 
