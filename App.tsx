@@ -10,7 +10,7 @@ import { exportAllNotes, readLibraryFile } from './services/fileSystem';
 import { notesStorage } from './services/notesStorage';
 
 const App: React.FC = () => {
-  const [splitOffset, setSplitOffset] = useState(50);
+  const [splitOffset, setSplitOffset] = useState(100); // Default to full-screen Bible view
   const [bottomSplitOffset, setBottomSplitOffset] = useState(65);
   const [isResizing, setIsResizing] = useState(false);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
@@ -196,7 +196,7 @@ const App: React.FC = () => {
         const relativeY = clientY - containerRect.top;
         const percentage = (relativeY / containerRect.height) * 100;
         console.log('Horizontal resize:', percentage);
-        if (percentage > 15 && percentage < 85) {
+        if (percentage >= 15 && percentage <= 100) {
           setSplitOffset(percentage);
         }
       } else if (isBottomResizing) {
