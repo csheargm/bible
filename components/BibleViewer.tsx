@@ -658,23 +658,13 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           </button>
         </div>
         <div className="flex items-center gap-3">
-          <label 
-            className="relative inline-flex items-center cursor-pointer select-none"
+          <button
+            onClick={toggleChineseMode}
+            className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-slate-200 hover:border-indigo-300 transition-colors shadow-sm"
             title="切换简繁体"
           >
-            <input 
-              type="checkbox" 
-              checked={!isSimplified}
-              onChange={toggleChineseMode}
-              className="sr-only peer"
-              aria-label="切换简繁体"
-            />
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-medium transition-colors ${isSimplified ? 'text-indigo-600' : 'text-slate-400'}`}>简</span>
-              <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 shadow-inner"></div>
-              <span className={`text-xs font-medium transition-colors ${!isSimplified ? 'text-indigo-600' : 'text-slate-400'}`}>繁</span>
-            </div>
-          </label>
+            <span className="text-xs font-medium text-slate-600">{isSimplified ? '简' : '繁'}</span>
+          </button>
           <div className="relative">
             {(isDownloading || autoDownloadInProgress) ? (
               <div className="flex items-center gap-2">

@@ -146,22 +146,40 @@ const App: React.FC = () => {
     e.target.value = "";
   };
 
-  const startResizing = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const startResizing = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Start resizing horizontal divider');
     setIsResizing(true);
+    // Prevent iOS bounce and other touch behaviors
+    if ('touches' in e) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
   }, []);
 
-  const startBottomResizing = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const startBottomResizing = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Start resizing vertical divider');
     setIsBottomResizing(true);
+    // Prevent iOS bounce and other touch behaviors
+    if ('touches' in e) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
   }, []);
 
   const stopResizing = useCallback(() => {
+    console.log('Stop resizing');
     setIsResizing(false);
     setIsBottomResizing(false);
+    // Restore scrolling
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
   }, []);
 
-  const resize = useCallback((e: MouseEvent | TouchEvent) => {
+  const resize = useCallback((e: MouseEvent | TouchEvent | PointerEvent) => {
     if (containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
       
@@ -169,16 +187,25 @@ const App: React.FC = () => {
       const clientX = 'touches' in e ? e.touches[0]?.clientX : e.clientX;
       const clientY = 'touches' in e ? e.touches[0]?.clientY : e.clientY;
       
-      if (!clientX || !clientY) return;
+      if (clientX === undefined || clientY === undefined) {
+        console.log('No coordinates found');
+        return;
+      }
       
       if (isResizing) {
         const relativeY = clientY - containerRect.top;
         const percentage = (relativeY / containerRect.height) * 100;
-        if (percentage > 15 && percentage < 85) setSplitOffset(percentage);
+        console.log('Horizontal resize:', percentage);
+        if (percentage > 15 && percentage < 85) {
+          setSplitOffset(percentage);
+        }
       } else if (isBottomResizing) {
         const relativeX = clientX - containerRect.left;
         const percentage = (relativeX / containerRect.width) * 100;
-        if (percentage > 20 && percentage < 80) setBottomSplitOffset(percentage);
+        console.log('Vertical resize:', percentage);
+        if (percentage > 20 && percentage < 80) {
+          setBottomSplitOffset(percentage);
+        }
       }
     }
   }, [isResizing, isBottomResizing]);
@@ -192,6 +219,10 @@ const App: React.FC = () => {
       window.addEventListener('touchmove', resize, { passive: false });
       window.addEventListener('touchend', stopResizing);
       window.addEventListener('touchcancel', stopResizing);
+      // Pointer events for better touch support
+      window.addEventListener('pointermove', resize);
+      window.addEventListener('pointerup', stopResizing);
+      window.addEventListener('pointercancel', stopResizing);
     } else {
       // Remove mouse events
       window.removeEventListener('mousemove', resize);
@@ -200,6 +231,10 @@ const App: React.FC = () => {
       window.removeEventListener('touchmove', resize);
       window.removeEventListener('touchend', stopResizing);
       window.removeEventListener('touchcancel', stopResizing);
+      // Remove pointer events
+      window.removeEventListener('pointermove', resize);
+      window.removeEventListener('pointerup', stopResizing);
+      window.removeEventListener('pointercancel', stopResizing);
     }
     return () => {
       // Cleanup all events
@@ -208,6 +243,9 @@ const App: React.FC = () => {
       window.removeEventListener('touchmove', resize);
       window.removeEventListener('touchend', stopResizing);
       window.removeEventListener('touchcancel', stopResizing);
+      window.removeEventListener('pointermove', resize);
+      window.removeEventListener('pointerup', stopResizing);
+      window.removeEventListener('pointercancel', stopResizing);
     };
   }, [isResizing, isBottomResizing, resize, stopResizing]);
 
@@ -224,7 +262,25 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50">
+    <div 
+      className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50"
+      style={{
+        display: '-webkit-box',
+        display: '-webkit-flex',
+        display: 'flex',
+        WebkitBoxOrient: 'vertical',
+        WebkitBoxDirection: 'normal',
+        WebkitFlexDirection: 'column',
+        flexDirection: 'column',
+        height: '100vh',
+        width: '100vw',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}
+    >
       <input 
         type="file" 
         ref={libraryInputRef} 
@@ -233,44 +289,64 @@ const App: React.FC = () => {
         className="hidden" 
       />
       
-      <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200 shrink-0 z-40 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">圣</div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">经学研 · Scripture Scholar</h1>
+      <header 
+        className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200 z-40 shadow-sm"
+        style={{
+          position: 'relative',
+          minHeight: '56px',
+          flexShrink: 0,
+          WebkitFlexShrink: 0,
+          display: '-webkit-box',
+          display: '-webkit-flex',
+          display: 'flex',
+          WebkitBoxAlign: 'center',
+          WebkitAlignItems: 'center',
+          alignItems: 'center',
+          WebkitBoxPack: 'justify',
+          WebkitJustifyContent: 'space-between',
+          justifyContent: 'space-between'
+        }}
+      >
+        <div className="flex items-center gap-2" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex' }}>
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm" style={{ flexShrink: 0, WebkitFlexShrink: 0 }}>圣</div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-800" style={{ whiteSpace: 'nowrap' }}>经学研 · Scripture Scholar</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 mr-2">
+        <div className="flex items-center gap-3" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex' }}>
+          <div className="flex items-center gap-1.5 mr-2" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex' }}>
             <button 
               onClick={handleBackupAll} 
               className="text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1 border border-slate-200 px-2 py-1 rounded"
               title="下载全部笔记到一个文件"
+              style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}
             >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
               全量备份
             </button>
             <button 
               onClick={handleRestoreClick} 
               className="text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1 border border-slate-200 px-2 py-1 rounded"
               title="从备份文件恢复全部笔记"
+              style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}
             >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
               恢复库
             </button>
             <button 
               onClick={handleClearAll} 
               className="text-[10px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1 border border-slate-200 px-2 py-1 rounded"
               title="清除所有笔记"
+              style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}
             >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
               清空库
             </button>
           </div>
-          <button onClick={() => setIsVoiceOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm">
+          <button onClick={() => setIsVoiceOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}>
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span></span>
             语音学者
           </button>
-          <div className="h-4 w-[1px] bg-slate-200"></div>
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-tighter">Bible Workspace</span>
+          <div className="h-4 w-[1px] bg-slate-200" style={{ flexShrink: 0 }}></div>
+          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-tighter" style={{ whiteSpace: 'nowrap' }}>Bible Workspace</span>
         </div>
       </header>
 
@@ -286,9 +362,20 @@ const App: React.FC = () => {
         <div 
           onMouseDown={startResizing}
           onTouchStart={startResizing}
-          className={`h-2 w-full flex items-center justify-center cursor-row-resize touch-none z-30 transition-all ${isResizing ? 'bg-indigo-600' : 'bg-slate-300 hover:bg-indigo-400'}`}
+          onPointerDown={startResizing}
+          className={`relative w-full flex items-center justify-center cursor-row-resize select-none z-30 transition-all`}
+          style={{ 
+            height: '20px', 
+            marginTop: '-10px', 
+            marginBottom: '-10px',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none'
+          }}
         >
-          <div className="w-16 h-1 bg-white/50 rounded-full"></div>
+          <div className={`absolute w-full h-2 ${isResizing ? 'bg-indigo-600' : 'bg-slate-300 hover:bg-indigo-400'}`}></div>
+          <div className="relative w-16 h-1 bg-white/50 rounded-full z-40"></div>
         </div>
 
         <div className="flex-1 flex overflow-hidden min-h-0">
@@ -299,9 +386,20 @@ const App: React.FC = () => {
           <div 
             onMouseDown={startBottomResizing}
             onTouchStart={startBottomResizing}
-            className={`w-2 h-full flex items-center justify-center cursor-col-resize touch-none z-30 transition-all ${isBottomResizing ? 'bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-slate-200 hover:bg-indigo-400'}`}
+            onPointerDown={startBottomResizing}
+            className={`relative h-full flex items-center justify-center cursor-col-resize select-none z-30 transition-all`}
+            style={{ 
+              width: '20px', 
+              marginLeft: '-10px', 
+              marginRight: '-10px',
+              touchAction: 'none',
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+              userSelect: 'none'
+            }}
           >
-            <div className="h-16 w-1 bg-white/60 rounded-full"></div>
+            <div className={`absolute h-full w-2 ${isBottomResizing ? 'bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-slate-200 hover:bg-indigo-400'}`}></div>
+            <div className="relative h-16 w-1 bg-white/60 rounded-full z-40"></div>
           </div>
 
           <div style={{ width: `${100 - bottomSplitOffset}%` }} className="h-full overflow-hidden">
