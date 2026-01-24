@@ -352,7 +352,7 @@ const App: React.FC = () => {
       </header>
 
       <main ref={containerRef} className="flex-1 flex flex-col relative overflow-hidden">
-        <div className="overflow-hidden" style={{ height: splitOffset >= 100 ? 'calc(100% - 24px)' : `${splitOffset}%` }}>
+        <div className="overflow-hidden" style={{ height: splitOffset >= 100 ? 'calc(100% - 16px)' : `${splitOffset}%` }}>
           <BibleViewer 
             notes={notes}
             onSelectionChange={setCurrentSelection}
@@ -363,7 +363,7 @@ const App: React.FC = () => {
         <div 
           className={`relative w-full flex items-center justify-center select-none z-30 transition-all group`}
           style={{ 
-            height: '24px', 
+            height: '16px', 
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
@@ -372,9 +372,9 @@ const App: React.FC = () => {
         >
           {/* Visible divider bar */}
           <div 
-            className={`absolute w-full ${isResizing ? 'h-2 bg-slate-400' : 'h-1 bg-slate-300 hover:bg-slate-400 hover:h-1.5'} transition-all`}
+            className={`absolute w-full ${isResizing ? 'h-1.5 bg-slate-400' : 'h-0.5 bg-slate-300 hover:bg-slate-400 hover:h-1'} transition-all`}
             style={{
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
             }}
           ></div>
           
@@ -386,25 +386,32 @@ const App: React.FC = () => {
           ></div>
           
           {/* Arrow buttons for quick positioning */}
-          <div className="relative flex items-center gap-0.5 bg-white/95 px-1.5 py-0.5 rounded-full shadow-sm border border-slate-200 z-40">
+          <div 
+            onMouseDown={startResizing}
+            onTouchStart={startResizing}
+            onPointerDown={startResizing}
+            className="relative flex items-center gap-0.5 bg-white/95 px-1 py-px rounded-full shadow-sm border border-slate-200 z-40 cursor-row-resize" 
+            style={{ height: '12px' }}
+          >
             {/* Up arrow - show more chat/notes (67% for Bible) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setSplitOffset(67);
               }}
-              className="p-0.5 hover:bg-slate-200 rounded transition-colors"
+              className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title="Show chat and notes (⅔ screen)"
+              style={{ height: '10px', width: '10px' }}
             >
-              <svg className="w-2.5 h-2.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+              <svg className="w-2 h-2 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
               </svg>
             </button>
             
             {/* Drag indicator */}
-            <div className="flex flex-col gap-px px-0.5">
-              <div className="w-4 h-px bg-slate-300"></div>
-              <div className="w-4 h-px bg-slate-300"></div>
+            <div className="flex flex-col gap-px px-0.5 justify-center" style={{ height: '10px' }}>
+              <div className="w-3 h-px bg-slate-300"></div>
+              <div className="w-3 h-px bg-slate-300"></div>
             </div>
             
             {/* Down arrow - maximize Bible (100%) */}
@@ -413,11 +420,12 @@ const App: React.FC = () => {
                 e.stopPropagation();
                 setSplitOffset(100);
               }}
-              className="p-0.5 hover:bg-slate-200 rounded transition-colors"
+              className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title="Maximize Bible reading"
+              style={{ height: '10px', width: '10px' }}
             >
-              <svg className="w-2.5 h-2.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              <svg className="w-2 h-2 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
           </div>
@@ -431,9 +439,9 @@ const App: React.FC = () => {
           <div 
             className={`relative h-full flex items-center justify-center select-none z-30 transition-all group`}
             style={{ 
-              width: '24px', 
-              marginLeft: '-12px', 
-              marginRight: '-12px',
+              width: '16px', 
+              marginLeft: '-8px', 
+              marginRight: '-8px',
               touchAction: 'none',
               WebkitTouchCallout: 'none',
               WebkitUserSelect: 'none',
@@ -442,9 +450,9 @@ const App: React.FC = () => {
           >
             {/* Visible divider bar */}
             <div 
-              className={`absolute h-full ${isBottomResizing ? 'w-2 bg-slate-400' : 'w-1 bg-slate-300 hover:bg-slate-400 hover:w-1.5'} transition-all`}
+              className={`absolute h-full ${isBottomResizing ? 'w-1.5 bg-slate-400' : 'w-0.5 bg-slate-300 hover:bg-slate-400 hover:w-1'} transition-all`}
               style={{
-                boxShadow: '1px 0 2px rgba(0, 0, 0, 0.1)'
+                boxShadow: '1px 0 2px rgba(0, 0, 0, 0.05)'
               }}
             ></div>
             
@@ -455,9 +463,15 @@ const App: React.FC = () => {
               className="absolute w-full h-full cursor-col-resize"
             ></div>
             
-            <div className="relative flex flex-row gap-px bg-white/95 px-0.5 py-1 rounded-full shadow-sm border border-slate-200 z-40">
-              <div className="w-px h-4 bg-slate-300"></div>
-              <div className="w-px h-4 bg-slate-300"></div>
+            <div 
+              onMouseDown={startBottomResizing}
+              onTouchStart={startBottomResizing}
+              onPointerDown={startBottomResizing}
+              className="relative flex flex-row gap-px bg-white/95 px-px py-0.5 rounded-full shadow-sm border border-slate-200 z-40 cursor-col-resize" 
+              style={{ width: '12px' }}
+            >
+              <div className="w-px h-3 bg-slate-300"></div>
+              <div className="w-px h-3 bg-slate-300"></div>
             </div>
           </div>
 
