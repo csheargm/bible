@@ -367,14 +367,17 @@ const App: React.FC = () => {
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
-            userSelect: 'none'
+            userSelect: 'none',
+            backgroundColor: '#e2e8f0', // Visible background color
+            borderTop: '2px solid #64748b',
+            borderBottom: '2px solid #64748b'
           }}
         >
           {/* Visible divider bar */}
           <div 
-            className={`absolute w-full ${isResizing ? 'h-6 bg-indigo-500' : 'h-4 bg-slate-500 hover:bg-indigo-400 hover:h-5'} transition-all`}
+            className={`absolute w-full ${isResizing ? 'h-8 bg-indigo-500' : 'h-6 bg-slate-600 hover:bg-indigo-500 hover:h-7'} transition-all`}
             style={{
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), 0 -2px 4px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3), 0 -2px 6px rgba(0, 0, 0, 0.3)'
             }}
           ></div>
           
@@ -438,14 +441,17 @@ const App: React.FC = () => {
               touchAction: 'none',
               WebkitTouchCallout: 'none',
               WebkitUserSelect: 'none',
-              userSelect: 'none'
+              userSelect: 'none',
+              backgroundColor: '#e2e8f0', // Visible background color
+              borderLeft: '2px solid #64748b',
+              borderRight: '2px solid #64748b'
             }}
           >
             {/* Visible divider bar */}
             <div 
-              className={`absolute h-full ${isBottomResizing ? 'w-6 bg-indigo-500' : 'w-4 bg-slate-500 hover:bg-indigo-400 hover:w-5'} transition-all`}
+              className={`absolute h-full ${isBottomResizing ? 'w-8 bg-indigo-500' : 'w-6 bg-slate-600 hover:bg-indigo-500 hover:w-7'} transition-all`}
               style={{
-                boxShadow: '2px 0 4px rgba(0, 0, 0, 0.2), -2px 0 4px rgba(0, 0, 0, 0.2)'
+                boxShadow: '2px 0 6px rgba(0, 0, 0, 0.3), -2px 0 6px rgba(0, 0, 0, 0.3)'
               }}
             ></div>
             
