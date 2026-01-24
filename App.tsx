@@ -11,7 +11,7 @@ import { notesStorage } from './services/notesStorage';
 
 const App: React.FC = () => {
   const [splitOffset, setSplitOffset] = useState(100); // Default to full-screen Bible view
-  const [bottomSplitOffset, setBottomSplitOffset] = useState(65);
+  const [bottomSplitOffset, setBottomSplitOffset] = useState(67); // Default to 2/3 for chat, 1/3 for notebook
   const [isResizing, setIsResizing] = useState(false);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
