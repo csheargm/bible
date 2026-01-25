@@ -415,7 +415,7 @@ const App: React.FC = () => {
             className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 hover:border-blue-400 transition-colors" 
             style={{ height: '20px', zIndex: 60 }}
           >
-            {/* Up arrow - toggle between 67% and 0% (minimize Bible) */}
+            {/* Up arrow - go to 50% when at bottom (100%), otherwise minimize/restore */}
             <button
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
@@ -423,19 +423,19 @@ const App: React.FC = () => {
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                // If at bottom (100%), go to 67%
-                // If at 67%, go to 0% (minimize Bible)
+                // If at bottom (100%), go to 50%
+                // If at 50-67%, go to 0% (minimize Bible)
                 // Otherwise go to 67%
                 if (splitOffset >= 100) {
-                  setSplitOffset(67);
-                } else if (splitOffset >= 67) {
+                  setSplitOffset(50);
+                } else if (splitOffset >= 50) {
                   setSplitOffset(0);
                 } else {
                   setSplitOffset(67);
                 }
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
-              title={splitOffset >= 100 ? "Show chat and notes (⅔ screen)" : splitOffset >= 67 ? "Minimize Bible view" : "Show chat and notes (⅔ screen)"}
+              title={splitOffset >= 100 ? "Split view (50/50)" : splitOffset >= 50 ? "Minimize Bible view" : "Show chat and notes (⅔ screen)"}
               style={{ height: '14px', width: '14px' }}
             >
               <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -455,7 +455,7 @@ const App: React.FC = () => {
               <div className="w-4 h-0.5 bg-slate-300 pointer-events-none"></div>
             </div>
             
-            {/* Down arrow - maximize Bible */}
+            {/* Down arrow - go to 50% when at top (0%), otherwise maximize */}
             <button
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
@@ -463,10 +463,16 @@ const App: React.FC = () => {
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                setSplitOffset(100); // Use 100 with flexbox calc
+                // If at top (0%), go to 50%
+                // Otherwise go to 100% (maximize)
+                if (splitOffset <= 0) {
+                  setSplitOffset(50);
+                } else {
+                  setSplitOffset(100);
+                }
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
-              title="Maximize Bible reading"
+              title={splitOffset <= 0 ? "Split view (50/50)" : "Maximize Bible reading"}
               style={{ height: '14px', width: '14px' }}
             >
               <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
