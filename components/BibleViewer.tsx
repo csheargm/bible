@@ -8,9 +8,26 @@ interface BibleViewerProps {
   onSelectionChange: (info: SelectionInfo) => void;
   onVersesSelectedForChat: (text: string) => void;
   notes: Record<string, string>;
+  sidebarOpen?: boolean;
+  showSidebarToggle?: boolean;
+  onSidebarToggle?: () => void;
+  isIPhone?: boolean;
+  onDownloadStateChange?: (isDownloading: boolean, progress: number) => void;
+  onDownloadFunctionsReady?: (downloadBible: () => void, downloadChapter: () => void) => void;
 }
 
-const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSelectedForChat, notes }) => {
+
+const BibleViewer: React.FC<BibleViewerProps> = ({ 
+  onSelectionChange, 
+  onVersesSelectedForChat, 
+  notes, 
+  sidebarOpen = false,
+  showSidebarToggle = true,
+  onSidebarToggle,
+  isIPhone = false,
+  onDownloadStateChange,
+  onDownloadFunctionsReady 
+}) => {
   const [selectedBook, setSelectedBook] = useState<Book>(BIBLE_BOOKS[0]);
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [leftVerses, setLeftVerses] = useState<Verse[]>([]);
@@ -607,6 +624,20 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
     });
   }, [isDownloading]);
 
+  // Expose download functions to parent
+  useEffect(() => {
+    if (onDownloadFunctionsReady) {
+      onDownloadFunctionsReady(handleDownloadBible, handleDownloadCurrentChapter);
+    }
+  }, [handleDownloadBible, handleDownloadCurrentChapter, onDownloadFunctionsReady]);
+
+  // Notify parent of download state changes
+  useEffect(() => {
+    if (onDownloadStateChange) {
+      onDownloadStateChange(isDownloading || autoDownloadInProgress, downloadProgress);
+    }
+  }, [isDownloading, autoDownloadInProgress, downloadProgress, onDownloadStateChange]);
+
   return (
     <div 
       className="h-full flex flex-col bg-white overflow-hidden select-text" 
@@ -614,8 +645,27 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
       onClick={handleEmptySpaceClick}
       onMouseUp={handleMouseUp}
     >
-      <div className="flex items-center justify-between p-3 border-b bg-slate-50 sticky top-0 z-10 shrink-0 shadow-sm" onClick={e => e.stopPropagation()}>
-        <div className="flex gap-2 items-center">
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50 sticky top-0 z-10 shrink-0 shadow-sm" onClick={e => e.stopPropagation()}>
+        <div className="flex gap-3 items-center">
+          {/* App Title integrated into Bible controls - responsive positioning */}
+          <div 
+            className={`flex items-center gap-2 ${!showSidebarToggle ? 'cursor-pointer' : ''}`}
+            style={{ 
+              marginLeft: showSidebarToggle ? (sidebarOpen ? '12px' : '52px') : '0px'
+            }}
+            onClick={!showSidebarToggle ? onSidebarToggle : undefined}
+          >
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">圣</div>
+            {!isIPhone && (
+              <h1 className="text-lg font-bold tracking-tight text-slate-800">经学研</h1>
+            )}
+            {!showSidebarToggle && (
+              <svg className="w-4 h-4 text-slate-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            )}
+          </div>
+          <div className="h-6 w-[1px] bg-slate-300"></div>
           <button 
             onClick={() => navigateChapter('prev')}
             disabled={!canNavigatePrev}
@@ -669,75 +719,35 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           >
             <span className="text-xs font-medium text-slate-600">{isSimplified ? '简' : '繁'}</span>
           </button>
-          <div className="relative">
-            {(isDownloading || autoDownloadInProgress) ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    downloadCancelRef.current = true;
-                    setIsDownloading(false);
-                    setAutoDownloadInProgress(false);
-                    setDownloadProgress(0);
-                  }}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
-                  title="停止下载"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span className="text-xs font-medium">停止</span>
-                </button>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-slate-200 shadow-sm">
-                  <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-xs font-medium text-slate-600">
-                    {autoDownloadInProgress ? '自动 ' : ''}{downloadProgress}%
-                  </span>
-                </div>
-              </div>
-            ) : (
+          {(isDownloading || autoDownloadInProgress) && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-slate-200 hover:border-indigo-300 transition-colors shadow-sm"
-                title="下载圣经供离线使用"
+                onClick={() => {
+                  downloadCancelRef.current = true;
+                  setIsDownloading(false);
+                  setAutoDownloadInProgress(false);
+                  setDownloadProgress(0);
+                }}
+                className="flex items-center gap-1 px-2 py-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
+                title="停止下载"
               >
-                <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                <span className="text-xs font-medium text-slate-600">离线</span>
-                <svg className="w-3 h-3 text-slate-400 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <span className="text-xs font-medium">停止</span>
               </button>
-            )}
-            {showDownloadMenu && !isDownloading && !autoDownloadInProgress && (
-              <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-20">
-                <button
-                  onClick={handleDownloadCurrentChapter}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 text-slate-700 whitespace-nowrap"
-                >
-                  下载当前章节
-                </button>
-                <button
-                  onClick={handleDownloadBible}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 text-slate-700 whitespace-nowrap"
-                >
-                  下载全部圣经
-                </button>
-                {hasIncompleteDownload && (
-                  <button
-                    onClick={handleResumeDownload}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 text-orange-600 whitespace-nowrap border-t"
-                  >
-                    继续下载
-                  </button>
-                )}
+              <div className="flex items-center gap-2 px-2 py-1 bg-white rounded-full border border-slate-200 shadow-sm">
+                <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs font-medium text-slate-600">
+                  {autoDownloadInProgress ? '自动 ' : ''}{downloadProgress}%
+                </span>
               </div>
-            )}
-          </div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
+            </div>
+          )}
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden lg:block">
             {selectedVerses.length === leftVerses.length && leftVerses.length > 0 ? '已选全章' : (selectedVerses.length > 0 ? `已选 ${selectedVerses.length} 节` : '点击经文或高亮文字')}
           </div>
-          <div className="h-4 w-[1px] bg-slate-200 hidden sm:block"></div>
+          <div className="h-4 w-[1px] bg-slate-200 hidden lg:block"></div>
           <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-full border border-slate-200 shadow-sm">
              <div className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-green-500' : 'bg-indigo-500 animate-pulse'}`}></div>
              <span className="text-[10px] font-bold text-slate-500">{isOffline ? '离线模式' : '在线'}</span>

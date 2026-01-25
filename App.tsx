@@ -4,23 +4,33 @@ import BibleViewer from './components/BibleViewer';
 import ChatInterface from './components/ChatInterface';
 import VoiceSession from './components/VoiceSession';
 import Notebook from './components/Notebook';
+import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SelectionInfo } from './types';
 import { exportAllNotes, readLibraryFile } from './services/fileSystem';
 import { notesStorage } from './services/notesStorage';
 
 const App: React.FC = () => {
-  // iPad detection for initial layout
-  const isIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+  // Device detection for responsive layout
+  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+  const isIPad = /iPad/.test(navigator.userAgent) || 
                  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+  const isMobile = isIPhone || isIPad;
   
-  const [splitOffset, setSplitOffset] = useState(isIPad ? 67 : 100); // iPad: 2/3, Desktop: maximized
+  const [splitOffset, setSplitOffset] = useState(isMobile ? 67 : 100); // Mobile: 2/3, Desktop: maximized
   const [bottomSplitOffset, setBottomSplitOffset] = useState(67); // Default to 2/3 for chat, 1/3 for notebook
   const [isResizing, setIsResizing] = useState(false);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [selectionPayload, setSelectionPayload] = useState<{ text: string; id: number } | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Download functions that will be connected to BibleViewer
+  const [downloadBible, setDownloadBible] = useState<(() => void) | null>(null);
+  const [downloadChapter, setDownloadChapter] = useState<(() => void) | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
@@ -185,9 +195,17 @@ const App: React.FC = () => {
     if (containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
       
-      // Get coordinates from either mouse or touch event
-      const clientX = 'touches' in e ? e.touches[0]?.clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0]?.clientY : e.clientY;
+      // Get coordinates from either mouse, touch, or pointer event
+      let clientX: number | undefined;
+      let clientY: number | undefined;
+      
+      if ('touches' in e && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else if ('clientX' in e && 'clientY' in e) {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
       
       if (clientX === undefined || clientY === undefined) {
         return;
@@ -295,88 +313,54 @@ const App: React.FC = () => {
         className="hidden" 
       />
       
-      <header 
-        className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200 z-40 shadow-sm"
-        style={{
-          position: 'relative',
-          minHeight: '56px',
-          flexShrink: 0,
-          WebkitFlexShrink: 0,
-          display: '-webkit-box',
-          display: '-webkit-flex',
-          display: 'flex',
-          WebkitBoxAlign: 'center',
-          WebkitAlignItems: 'center',
-          alignItems: 'center',
-          WebkitBoxPack: 'justify',
-          WebkitJustifyContent: 'space-between',
-          justifyContent: 'space-between'
-        }}
-      >
-        <div className="flex items-center gap-2" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex' }}>
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm" style={{ flexShrink: 0, WebkitFlexShrink: 0 }}>圣</div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800" style={{ whiteSpace: 'nowrap' }}>经学研 · Scripture Scholar</h1>
-        </div>
-        <div className="flex items-center gap-3" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex' }}>
-          <div className="flex items-center gap-1.5 mr-2" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex' }}>
-            <button 
-              onClick={handleBackupAll} 
-              className="text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1 border border-slate-200 px-2 py-1 rounded"
-              title="下载全部笔记到一个文件"
-              style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-              全量备份
-            </button>
-            <button 
-              onClick={handleRestoreClick} 
-              className="text-[10px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1 border border-slate-200 px-2 py-1 rounded"
-              title="从备份文件恢复全部笔记"
-              style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-              恢复库
-            </button>
-            <button 
-              onClick={handleClearAll} 
-              className="text-[10px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1 border border-slate-200 px-2 py-1 rounded"
-              title="清除所有笔记"
-              style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              清空库
-            </button>
-          </div>
-          <button onClick={() => setIsVoiceOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm" style={{ display: '-webkit-box', display: '-webkit-flex', display: 'flex', WebkitAppearance: 'none' }}>
-            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span></span>
-            语音学者
-          </button>
-          <div className="h-4 w-[1px] bg-slate-200" style={{ flexShrink: 0 }}></div>
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-tighter" style={{ whiteSpace: 'nowrap' }}>Bible Workspace</span>
-        </div>
-      </header>
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        showToggle={!isIPhone} // Hide toggle on iPhone to save space
+        onBackup={handleBackupAll}
+        onRestore={handleRestoreClick}
+        onClear={handleClearAll}
+        onVoiceOpen={() => setIsVoiceOpen(true)}
+        notesCount={Object.keys(notes).length}
+        onDownloadBible={downloadBible}
+        onDownloadChapter={downloadChapter}
+        downloadProgress={downloadProgress}
+        isDownloading={isDownloading}
+      />
 
       <main ref={containerRef} className="flex-1 flex flex-col relative overflow-hidden" style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100%'
+        height: '100%',
+        paddingTop: 0 // No padding since header is removed
       }}>
         {/* Bible viewer - flexbox based like the Bible's vertical divider */}
         <div className="overflow-hidden" style={{ 
           flexGrow: splitOffset >= 100 ? 1 : 0,
           flexShrink: splitOffset >= 100 ? 1 : 0,
           flexBasis: splitOffset >= 100 ? 'calc(100% - 24px)' : splitOffset <= 0 ? '0%' : `${splitOffset}%`,
-          minHeight: 0,
-          display: splitOffset <= 0 ? 'none' : 'block'
+          minHeight: 0
         }}>
           <BibleViewer 
             notes={notes}
             onSelectionChange={setCurrentSelection}
-            onVersesSelectedForChat={(text) => setSelectionPayload({ text, id: Date.now() })} 
+            onVersesSelectedForChat={(text) => setSelectionPayload({ text, id: Date.now() })}
+            sidebarOpen={isSidebarOpen}
+            showSidebarToggle={!isIPhone} // Pass iPhone detection to BibleViewer
+            onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} // Allow title tap to open sidebar on iPhone
+            isIPhone={isIPhone}
+            onDownloadStateChange={(downloading, progress) => {
+              setIsDownloading(downloading);
+              setDownloadProgress(progress);
+            }}
+            onDownloadFunctionsReady={(downloadBibleFn, downloadChapterFn) => {
+              setDownloadBible(() => downloadBibleFn);
+              setDownloadChapter(() => downloadChapterFn);
+            }}
           />
         </div>
 
-        {/* Divider with fixed height - always show unless Bible is completely hidden */}
+        {/* Divider with fixed height - always visible */}
         <div 
           className={`relative w-full flex items-center justify-center select-none z-30 transition-all group hover:bg-blue-50`}
           style={{ 
@@ -387,8 +371,7 @@ const App: React.FC = () => {
             WebkitUserSelect: 'none',
             userSelect: 'none',
             position: 'relative',
-            zIndex: 40,
-            display: splitOffset <= 0 ? 'none' : 'flex'
+            zIndex: 40
           }}
         >
           {/* Visible divider bar */}
@@ -400,25 +383,28 @@ const App: React.FC = () => {
             }}
           ></div>
           
+          {/* Invisible drag area - must be above visible bar but below controls */}
           <div 
             onMouseDown={startResizing}
             onTouchStart={startResizing}
             onPointerDown={startResizing}
             className="absolute w-full h-full cursor-row-resize"
+            style={{ zIndex: 20 }}
           ></div>
           
           {/* Arrow buttons for quick positioning */}
           <div 
-            onMouseDown={startResizing}
-            onTouchStart={startResizing}
-            onPointerDown={startResizing}
-            className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 hover:border-blue-400 cursor-row-resize transition-colors" 
+            className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 hover:border-blue-400 transition-colors" 
             style={{ height: '20px', zIndex: 60 }}
           >
             {/* Up arrow - toggle between 67% and 0% (minimize Bible) */}
             <button
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 // If at bottom (100%), go to 67%
                 // If at 67%, go to 0% (minimize Bible)
                 // Otherwise go to 67%
@@ -443,6 +429,7 @@ const App: React.FC = () => {
             <div 
               onMouseDown={startResizing}
               onTouchStart={startResizing}
+              onPointerDown={startResizing}
               className="flex flex-col gap-0.5 px-1 justify-center cursor-row-resize" 
               style={{ height: '14px' }}
             >
@@ -452,8 +439,12 @@ const App: React.FC = () => {
             
             {/* Down arrow - maximize Bible */}
             <button
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 setSplitOffset(100); // Use 100 with flexbox calc
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
