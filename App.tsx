@@ -44,18 +44,17 @@ const App: React.FC = () => {
   const handleSelectionChange = useCallback((selection: SelectionInfo | null) => {
     setCurrentSelection(selection);
     
-    // When a verse is selected, move horizontal divider to middle for note-taking
+    // When a verse is selected, optimize layout for note-taking
     if (selection) {
       // If Bible is maximized, move to 50% to show notes area
       if (splitOffset >= 90) {
         setSplitOffset(50);
       }
-      // If notes area is hidden, show it
-      if (bottomSplitOffset >= 95 || bottomSplitOffset <= 5) {
-        setBottomSplitOffset(50);
-      }
+      // Maximize notes view (right side) and minimize chat (left side)
+      // Set to 5% to give almost all space to notes
+      setBottomSplitOffset(5);
     }
-  }, [splitOffset, bottomSplitOffset]);
+  }, [splitOffset]);
   
   
   // Load notes from IndexedDB on mount and migrate from localStorage if needed
