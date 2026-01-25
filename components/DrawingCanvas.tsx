@@ -5,6 +5,7 @@ interface DrawingCanvasProps {
   initialData?: string; // base64 image or path data
   onChange: (data: string) => void;
   overlayMode?: boolean; // Whether to overlay on text
+  isWritingMode?: boolean; // Whether to allow writing or just navigation
 }
 
 export interface DrawingCanvasHandle {
@@ -29,7 +30,7 @@ interface DrawingPath {
   }>;
 }
 
-const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(({ initialData, onChange, overlayMode = false }, ref) => {
+const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(({ initialData, onChange, overlayMode = false, isWritingMode = true }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentTool, setCurrentTool] = useState<'pen' | 'marker' | 'highlighter' | 'eraser'>('pen');
@@ -228,6 +229,9 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(({ ini
     // Only check isPrimary for pointer events
     if ('isPrimary' in e && !e.isPrimary) return;
     
+    // If not in writing mode, don't start drawing
+    if (!isWritingMode) return;
+    
     e.preventDefault();
     setIsDrawing(true);
     
@@ -350,11 +354,12 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(({ ini
         overlayMode ? 'absolute inset-0 bg-transparent' : 'bg-slate-50/30'
       }`}
       style={{
-        touchAction: 'none',
+        touchAction: isWritingMode ? 'none' : 'auto',
         WebkitTouchCallout: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
+        cursor: isWritingMode ? 'crosshair' : 'grab'
       }}
     />
   );

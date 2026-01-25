@@ -20,6 +20,7 @@ const Notebook: React.FC<NotebookProps> = ({ selection, onSaveNote, initialConte
   const [drawingTool, setDrawingTool] = useState<'pen' | 'marker' | 'highlighter' | 'eraser'>('pen');
   const [drawingColor, setDrawingColor] = useState('#000000');
   const [drawingSize, setDrawingSize] = useState(2);
+  const [isWritingMode, setIsWritingMode] = useState(true);
   
   const editorRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<DrawingCanvasHandle>(null);
@@ -502,38 +503,94 @@ const Notebook: React.FC<NotebookProps> = ({ selection, onSaveNote, initialConte
               initialData={noteData.drawing}
               onChange={handleDrawingChange}
               overlayMode={true}
+              isWritingMode={isWritingMode}
             />
             {/* Floating drawing tools for overlay mode */}
-            <div className="absolute bottom-4 right-4 bg-white rounded-xl shadow-lg p-2 flex gap-1">
-              <button
-                onClick={() => { setDrawingTool('pen'); canvasRef.current?.setTool('pen'); }}
-                className={`p-1.5 rounded ${drawingTool === 'pen' ? 'bg-indigo-100' : 'hover:bg-slate-100'}`}
-                title="Pen"
-              >✏️</button>
-              <button
-                onClick={() => { setDrawingTool('eraser'); canvasRef.current?.setTool('eraser'); }}
-                className={`p-1.5 rounded ${drawingTool === 'eraser' ? 'bg-red-100' : 'hover:bg-slate-100'}`}
-                title="Eraser"
-              >🧹</button>
-              <button
-                onClick={() => canvasRef.current?.clear()}
-                className="p-1.5 rounded hover:bg-slate-100"
-                title="Clear"
-              >🗑️</button>
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+              {/* Writing mode toggle */}
+              <div className="bg-white rounded-xl shadow-lg p-2">
+                <button
+                  onClick={() => setIsWritingMode(!isWritingMode)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                    isWritingMode 
+                      ? 'bg-indigo-100 text-indigo-700' 
+                      : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {isWritingMode ? '✏️ Write' : '👆 Navigate'}
+                </button>
+              </div>
+              {/* Drawing tools */}
+              <div className={`bg-white rounded-xl shadow-lg p-2 flex gap-1 ${
+                isWritingMode ? 'opacity-100' : 'opacity-30 pointer-events-none'
+              }`}>
+                <button
+                  onClick={() => { setDrawingTool('pen'); canvasRef.current?.setTool('pen'); }}
+                  className={`p-1.5 rounded ${drawingTool === 'pen' ? 'bg-indigo-100' : 'hover:bg-slate-100'}`}
+                  title="Pen"
+                >✏️</button>
+                <button
+                  onClick={() => { setDrawingTool('eraser'); canvasRef.current?.setTool('eraser'); }}
+                  className={`p-1.5 rounded ${drawingTool === 'eraser' ? 'bg-red-100' : 'hover:bg-slate-100'}`}
+                  title="Eraser"
+                >🧹</button>
+                <button
+                  onClick={() => canvasRef.current?.clear()}
+                  className="p-1.5 rounded hover:bg-slate-100"
+                  title="Clear"
+                >🗑️</button>
+              </div>
             </div>
           </div>
         )}
         
         <div className={`absolute inset-0 p-4 transition-opacity duration-300 ${mode === 'draw' && selection ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-          <div className="w-full h-full border border-slate-100 rounded-xl relative overflow-hidden bg-slate-50/50">
-             <DrawingCanvas 
-               ref={canvasRef}
-               initialData={noteData.drawing} 
-               onChange={handleDrawingChange}
-               overlayMode={false}
-             />
+          <div className="w-full h-full border border-slate-100 rounded-xl relative overflow-auto bg-slate-50/50">
+             {/* Writing mode toggle for iPad */}
+             <div className="absolute top-4 left-4 z-30 bg-white rounded-lg shadow-lg p-2 flex items-center gap-2">
+               <button
+                 onClick={() => setIsWritingMode(!isWritingMode)}
+                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                   isWritingMode 
+                     ? 'bg-indigo-100 text-indigo-700' 
+                     : 'bg-slate-100 text-slate-700'
+                 }`}
+                 title={isWritingMode ? 'Switch to navigation mode' : 'Switch to writing mode'}
+               >
+                 {isWritingMode ? (
+                   <>
+                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                     </svg>
+                     <span className="text-xs font-semibold">Writing</span>
+                   </>
+                 ) : (
+                   <>
+                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                     </svg>
+                     <span className="text-xs font-semibold">Navigate</span>
+                   </>
+                 )}
+               </button>
+               {!isWritingMode && (
+                 <span className="text-[10px] text-slate-500 italic">Use finger to scroll/pan</span>
+               )}
+             </div>
+             
+             <div className={`${isWritingMode ? '' : 'pointer-events-none'}`} style={{ width: '150%', height: '150%' }}>
+               <DrawingCanvas 
+                 ref={canvasRef}
+                 initialData={noteData.drawing} 
+                 onChange={handleDrawingChange}
+                 overlayMode={false}
+                 isWritingMode={isWritingMode}
+               />
+             </div>
              {/* Drawing tools palette */}
-             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-xl shadow-lg p-3 flex flex-col gap-2">
+             <div className={`absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-xl shadow-lg p-3 flex flex-col gap-2 transition-opacity ${
+               isWritingMode ? 'opacity-100' : 'opacity-30 pointer-events-none'
+             }`}>
                <div className="flex gap-1">
                  <button
                    onClick={() => { setDrawingTool('pen'); canvasRef.current?.setTool('pen'); }}
