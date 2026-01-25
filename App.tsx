@@ -10,7 +10,12 @@ import { exportAllNotes, readLibraryFile } from './services/fileSystem';
 import { notesStorage } from './services/notesStorage';
 
 const App: React.FC = () => {
-  const [splitOffset, setSplitOffset] = useState(100); // Default to bottom (Bible view maximized)
+  // Check if device is iPad/tablet
+  const isIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                 (navigator.userAgent.includes("Mac") && "ontouchend" in document) ||
+                 (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+  
+  const [splitOffset, setSplitOffset] = useState(isIPad ? 67 : 100); // iPad: 2/3, Desktop: maximized
   const [bottomSplitOffset, setBottomSplitOffset] = useState(67); // Default to 2/3 for chat, 1/3 for notebook
   const [isResizing, setIsResizing] = useState(false);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
@@ -352,7 +357,7 @@ const App: React.FC = () => {
       </header>
 
       <main ref={containerRef} className="flex-1 flex flex-col relative overflow-hidden">
-        <div className="overflow-hidden" style={{ height: splitOffset >= 100 ? 'calc(100% - 16px)' : `${splitOffset}%` }}>
+        <div className="overflow-hidden" style={{ height: splitOffset >= 100 ? 'calc(100% - 24px)' : `${splitOffset}%` }}>
           <BibleViewer 
             notes={notes}
             onSelectionChange={setCurrentSelection}
@@ -363,7 +368,7 @@ const App: React.FC = () => {
         <div 
           className={`relative w-full flex items-center justify-center select-none z-30 transition-all group hover:bg-blue-50`}
           style={{ 
-            height: '16px', 
+            height: '24px', 
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
@@ -372,7 +377,7 @@ const App: React.FC = () => {
         >
           {/* Visible divider bar */}
           <div 
-            className={`absolute w-full ${isResizing ? 'h-2 bg-indigo-500' : 'h-1 bg-slate-200 group-hover:bg-indigo-400 group-hover:h-2'} transition-all`}
+            className={`absolute w-full ${isResizing ? 'h-3 bg-indigo-500' : 'h-2 bg-slate-400 group-hover:bg-indigo-400 group-hover:h-3'} transition-all`}
             style={{
               boxShadow: isResizing ? '0 2px 4px rgba(99, 102, 241, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
             }}
@@ -390,7 +395,7 @@ const App: React.FC = () => {
             onMouseDown={startResizing}
             onTouchStart={startResizing}
             onPointerDown={startResizing}
-            className="relative flex items-center gap-1 bg-white/95 px-2 py-1 rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-row-resize transition-colors" 
+            className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 hover:border-blue-400 z-40 cursor-row-resize transition-colors" 
             style={{ height: '20px' }}
           >
             {/* Up arrow - toggle between 67% and 0% (minimize Bible) */}
@@ -418,9 +423,14 @@ const App: React.FC = () => {
             </button>
             
             {/* Drag indicator */}
-            <div className="flex flex-col gap-0.5 px-1 justify-center" style={{ height: '14px' }}>
-              <div className="w-4 h-0.5 bg-slate-300"></div>
-              <div className="w-4 h-0.5 bg-slate-300"></div>
+            <div 
+              onMouseDown={startResizing}
+              onTouchStart={startResizing}
+              className="flex flex-col gap-0.5 px-1 justify-center cursor-row-resize" 
+              style={{ height: '14px' }}
+            >
+              <div className="w-4 h-0.5 bg-slate-300 pointer-events-none"></div>
+              <div className="w-4 h-0.5 bg-slate-300 pointer-events-none"></div>
             </div>
             
             {/* Down arrow - maximize Bible (100%) */}
@@ -485,7 +495,7 @@ const App: React.FC = () => {
               onMouseDown={startBottomResizing}
               onTouchStart={startBottomResizing}
               onPointerDown={startBottomResizing}
-              className="relative flex flex-col gap-1 bg-white/95 py-1.5 px-1 rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
+              className="relative flex flex-col gap-1 bg-white/95 py-1.5 px-1 rounded-full shadow-lg border border-slate-300 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
               style={{ width: '20px' }}
             >
               {/* Left arrow - toggle between middle (50%) and maximize notes (5%) */}
@@ -506,9 +516,14 @@ const App: React.FC = () => {
               </button>
               
               {/* Drag indicator */}
-              <div className="flex flex-row gap-0.5 px-1 justify-center" style={{ width: '14px' }}>
-                <div className="w-0.5 h-4 bg-slate-300"></div>
-                <div className="w-0.5 h-4 bg-slate-300"></div>
+              <div 
+                onMouseDown={startBottomResizing}
+                onTouchStart={startBottomResizing}
+                className="flex flex-row gap-0.5 px-1 justify-center cursor-col-resize" 
+                style={{ width: '14px' }}
+              >
+                <div className="w-0.5 h-4 bg-slate-300 pointer-events-none"></div>
+                <div className="w-0.5 h-4 bg-slate-300 pointer-events-none"></div>
               </div>
               
               {/* Right arrow - toggle between middle (50%) and maximize chat (95%) */}

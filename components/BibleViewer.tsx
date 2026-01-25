@@ -509,8 +509,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
     }
   };
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
+  const startResizing = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsResizing(true);
   }, []);
 
@@ -816,7 +817,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           
           {/* Arrow buttons and drag indicator */}
           <div 
-            className="relative flex flex-col gap-1 bg-white/95 py-1.5 px-1 rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
+            className="relative flex flex-col gap-1 bg-white/95 py-1.5 px-1 rounded-full shadow-lg border border-slate-300 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
             style={{ width: '20px' }}
           >
             {/* Left arrow - toggle between middle (50%) and maximize English (0%) */}
@@ -841,11 +842,12 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
             {/* Drag indicator */}
             <div 
               onMouseDown={startResizing}
+              onTouchStart={startResizing}
               className="flex flex-row gap-0.5 px-1 justify-center cursor-col-resize" 
               style={{ width: '14px' }}
             >
-              <div className="w-0.5 h-4 bg-slate-300"></div>
-              <div className="w-0.5 h-4 bg-slate-300"></div>
+              <div className="w-0.5 h-4 bg-slate-300 pointer-events-none"></div>
+              <div className="w-0.5 h-4 bg-slate-300 pointer-events-none"></div>
             </div>
             
             {/* Right arrow - toggle between middle (50%) and maximize Chinese (100%) */}
