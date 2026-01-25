@@ -10,9 +10,8 @@ import { exportAllNotes, readLibraryFile } from './services/fileSystem';
 import { notesStorage } from './services/notesStorage';
 
 const App: React.FC = () => {
-  // Check if device is iPad/tablet
+  // iPad detection for initial layout
   const isIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                 (navigator.userAgent.includes("Mac") && "ontouchend" in document) ||
                  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
   
   const [splitOffset, setSplitOffset] = useState(isIPad ? 67 : 100); // iPad: 2/3, Desktop: maximized
@@ -30,7 +29,8 @@ const App: React.FC = () => {
   const [currentSelection, setCurrentSelection] = useState<SelectionInfo | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [notesLoading, setNotesLoading] = useState(true);
-
+  
+  
   // Load notes from IndexedDB on mount and migrate from localStorage if needed
   useEffect(() => {
     const loadNotes = async () => {
@@ -154,7 +154,6 @@ const App: React.FC = () => {
   const startResizing = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Start resizing horizontal divider');
     setIsResizing(true);
     // Prevent iOS bounce and other touch behaviors
     if ('touches' in e) {
@@ -166,7 +165,6 @@ const App: React.FC = () => {
   const startBottomResizing = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Start resizing vertical divider');
     setIsBottomResizing(true);
     // Prevent iOS bounce and other touch behaviors
     if ('touches' in e) {
@@ -176,7 +174,6 @@ const App: React.FC = () => {
   }, []);
 
   const stopResizing = useCallback(() => {
-    console.log('Stop resizing');
     setIsResizing(false);
     setIsBottomResizing(false);
     // Restore scrolling
@@ -193,21 +190,24 @@ const App: React.FC = () => {
       const clientY = 'touches' in e ? e.touches[0]?.clientY : e.clientY;
       
       if (clientX === undefined || clientY === undefined) {
-        console.log('No coordinates found');
         return;
       }
       
       if (isResizing) {
         const relativeY = clientY - containerRect.top;
-        const percentage = (relativeY / containerRect.height) * 100;
-        console.log('Horizontal resize:', percentage);
-        if (percentage >= 0 && percentage <= 100) {
-          setSplitOffset(percentage);
-        }
+        const height = containerRect.height;
+        
+        // Calculate percentage (0-100)
+        const percentage = (relativeY / height) * 100;
+        
+        // Clamp to 0-100 range (flexbox handles the actual spacing)
+        const clampedPercentage = Math.min(Math.max(0, percentage), 100);
+        
+        // Set the clamped percentage
+        setSplitOffset(clampedPercentage);
       } else if (isBottomResizing) {
         const relativeX = clientX - containerRect.left;
         const percentage = (relativeX / containerRect.width) * 100;
-        console.log('Vertical resize:', percentage);
         if (percentage >= 0 && percentage <= 100) {
           setBottomSplitOffset(percentage);
         }
@@ -356,8 +356,19 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main ref={containerRef} className="flex-1 flex flex-col relative overflow-hidden">
-        <div className="overflow-hidden" style={{ height: splitOffset >= 100 ? 'calc(100% - 24px)' : `${splitOffset}%` }}>
+      <main ref={containerRef} className="flex-1 flex flex-col relative overflow-hidden" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%'
+      }}>
+        {/* Bible viewer - flexbox based like the Bible's vertical divider */}
+        <div className="overflow-hidden" style={{ 
+          flexGrow: splitOffset >= 100 ? 1 : 0,
+          flexShrink: splitOffset >= 100 ? 1 : 0,
+          flexBasis: splitOffset >= 100 ? 'calc(100% - 24px)' : splitOffset <= 0 ? '0%' : `${splitOffset}%`,
+          minHeight: 0,
+          display: splitOffset <= 0 ? 'none' : 'block'
+        }}>
           <BibleViewer 
             notes={notes}
             onSelectionChange={setCurrentSelection}
@@ -365,21 +376,27 @@ const App: React.FC = () => {
           />
         </div>
 
+        {/* Divider with fixed height - always show unless Bible is completely hidden */}
         <div 
           className={`relative w-full flex items-center justify-center select-none z-30 transition-all group hover:bg-blue-50`}
           style={{ 
-            height: '24px', 
+            flexShrink: 0,
+            height: '24px',
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
-            userSelect: 'none'
+            userSelect: 'none',
+            position: 'relative',
+            zIndex: 40,
+            display: splitOffset <= 0 ? 'none' : 'flex'
           }}
         >
           {/* Visible divider bar */}
           <div 
             className={`absolute w-full ${isResizing ? 'h-3 bg-indigo-500' : 'h-2 bg-slate-400 group-hover:bg-indigo-400 group-hover:h-3'} transition-all`}
             style={{
-              boxShadow: isResizing ? '0 2px 4px rgba(99, 102, 241, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)'
+              boxShadow: isResizing ? '0 2px 4px rgba(99, 102, 241, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+              zIndex: 10 // Behind the controls
             }}
           ></div>
           
@@ -395,8 +412,8 @@ const App: React.FC = () => {
             onMouseDown={startResizing}
             onTouchStart={startResizing}
             onPointerDown={startResizing}
-            className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 hover:border-blue-400 z-40 cursor-row-resize transition-colors" 
-            style={{ height: '20px' }}
+            className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 hover:border-blue-400 cursor-row-resize transition-colors" 
+            style={{ height: '20px', zIndex: 60 }}
           >
             {/* Up arrow - toggle between 67% and 0% (minimize Bible) */}
             <button
@@ -433,11 +450,11 @@ const App: React.FC = () => {
               <div className="w-4 h-0.5 bg-slate-300 pointer-events-none"></div>
             </div>
             
-            {/* Down arrow - maximize Bible (100%) */}
+            {/* Down arrow - maximize Bible */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setSplitOffset(100);
+                setSplitOffset(100); // Use 100 with flexbox calc
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title="Maximize Bible reading"
@@ -450,7 +467,14 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 flex overflow-hidden min-h-0" style={{ display: splitOffset >= 100 ? 'none' : 'flex' }}>
+        {/* Bottom area - flexbox based to fill remaining space */}
+        <div className="overflow-hidden flex" style={{ 
+          flexGrow: splitOffset <= 0 ? 1 : 1,
+          flexShrink: splitOffset <= 0 ? 1 : 1,
+          flexBasis: splitOffset <= 0 ? 'calc(100% - 24px)' : splitOffset >= 100 ? '0%' : 'auto',
+          minHeight: 0,
+          display: splitOffset >= 100 ? 'none' : 'flex'
+        }}>
           <div 
             className="h-full overflow-hidden"
             style={{ 
