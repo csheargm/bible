@@ -390,8 +390,8 @@ const App: React.FC = () => {
             onMouseDown={startResizing}
             onTouchStart={startResizing}
             onPointerDown={startResizing}
-            className="relative flex items-center gap-0.5 bg-white/95 px-1 py-px rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-row-resize transition-colors" 
-            style={{ height: '12px' }}
+            className="relative flex items-center gap-1 bg-white/95 px-2 py-1 rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-row-resize transition-colors" 
+            style={{ height: '20px' }}
           >
             {/* Up arrow - toggle between 67% and 0% (minimize Bible) */}
             <button
@@ -410,17 +410,17 @@ const App: React.FC = () => {
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title={splitOffset >= 100 ? "Show chat and notes (⅔ screen)" : splitOffset >= 67 ? "Minimize Bible view" : "Show chat and notes (⅔ screen)"}
-              style={{ height: '10px', width: '10px' }}
+              style={{ height: '14px', width: '14px' }}
             >
-              <svg className="w-2 h-2 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
               </svg>
             </button>
             
             {/* Drag indicator */}
-            <div className="flex flex-col gap-px px-0.5 justify-center" style={{ height: '10px' }}>
-              <div className="w-3 h-px bg-slate-300"></div>
-              <div className="w-3 h-px bg-slate-300"></div>
+            <div className="flex flex-col gap-0.5 px-1 justify-center" style={{ height: '14px' }}>
+              <div className="w-4 h-0.5 bg-slate-300"></div>
+              <div className="w-4 h-0.5 bg-slate-300"></div>
             </div>
             
             {/* Down arrow - maximize Bible (100%) */}
@@ -431,9 +431,9 @@ const App: React.FC = () => {
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title="Maximize Bible reading"
-              style={{ height: '10px', width: '10px' }}
+              style={{ height: '14px', width: '14px' }}
             >
-              <svg className="w-2 h-2 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -441,16 +441,25 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex-1 flex overflow-hidden min-h-0" style={{ display: splitOffset >= 100 ? 'none' : 'flex' }}>
-          <div style={{ width: bottomSplitOffset >= 100 ? 'calc(100% - 16px)' : `${bottomSplitOffset}%` }} className="h-full overflow-hidden">
+          <div 
+            className="h-full overflow-hidden"
+            style={{ 
+              flexGrow: bottomSplitOffset >= 100 ? 1 : 0,
+              flexShrink: bottomSplitOffset >= 100 ? 1 : 0,
+              flexBasis: bottomSplitOffset >= 100 ? 'calc(100% - 20px)' : bottomSplitOffset <= 0 ? '0%' : `calc(${bottomSplitOffset}% - 10px)`,
+              minWidth: 0,
+              display: bottomSplitOffset <= 0 ? 'none' : 'block'
+            }}
+          >
              <ChatInterface incomingText={selectionPayload} />
           </div>
           
           <div 
             className={`relative h-full flex items-center justify-center select-none z-30 transition-all group hover:bg-blue-50`}
             style={{ 
-              width: '16px', 
-              marginLeft: '-8px', 
-              marginRight: '-8px',
+              width: '20px', 
+              marginLeft: '0', 
+              marginRight: '0',
               touchAction: 'none',
               WebkitTouchCallout: 'none',
               WebkitUserSelect: 'none',
@@ -476,8 +485,8 @@ const App: React.FC = () => {
               onMouseDown={startBottomResizing}
               onTouchStart={startBottomResizing}
               onPointerDown={startBottomResizing}
-              className="relative flex flex-col gap-0.5 bg-white/95 py-1 px-px rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
-              style={{ width: '12px' }}
+              className="relative flex flex-col gap-1 bg-white/95 py-1.5 px-1 rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
+              style={{ width: '20px' }}
             >
               {/* Left arrow - toggle between middle (50%) and maximize notes (5%) */}
               <button
@@ -497,9 +506,9 @@ const App: React.FC = () => {
               </button>
               
               {/* Drag indicator */}
-              <div className="flex flex-row gap-px px-0.5 justify-center" style={{ width: '10px' }}>
-                <div className="w-px h-3 bg-slate-300"></div>
-                <div className="w-px h-3 bg-slate-300"></div>
+              <div className="flex flex-row gap-0.5 px-1 justify-center" style={{ width: '14px' }}>
+                <div className="w-0.5 h-4 bg-slate-300"></div>
+                <div className="w-0.5 h-4 bg-slate-300"></div>
               </div>
               
               {/* Right arrow - toggle between middle (50%) and maximize chat (95%) */}
@@ -521,7 +530,16 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ width: bottomSplitOffset <= 0 ? 'calc(100% - 16px)' : `${100 - bottomSplitOffset}%` }} className="h-full overflow-hidden">
+          <div 
+            className="h-full overflow-hidden"
+            style={{ 
+              flexGrow: bottomSplitOffset <= 0 ? 1 : 0,
+              flexShrink: bottomSplitOffset <= 0 ? 1 : 0,
+              flexBasis: bottomSplitOffset <= 0 ? 'calc(100% - 20px)' : bottomSplitOffset >= 100 ? '0%' : `calc(${100 - bottomSplitOffset}% - 10px)`,
+              minWidth: 0,
+              display: bottomSplitOffset >= 100 ? 'none' : 'block'
+            }}
+          >
             <Notebook 
               selection={currentSelection} 
               onSaveNote={handleSaveNote}

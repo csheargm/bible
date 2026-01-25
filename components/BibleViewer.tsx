@@ -32,7 +32,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
   const [autoDownloadInProgress, setAutoDownloadInProgress] = useState(false);
   const downloadCancelRef = useRef(false);
   
-  const [vSplitOffset, setVSplitOffset] = useState(50);
+  const [vSplitOffset, setVSplitOffset] = useState(100); // Start with Chinese maximized
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelContainerRef = useRef<HTMLDivElement>(null);
@@ -758,7 +758,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           style={{ 
             flexGrow: vSplitOffset >= 100 ? 1 : 0,
             flexShrink: vSplitOffset >= 100 ? 1 : 0,
-            flexBasis: vSplitOffset >= 100 ? '100%' : vSplitOffset <= 0 ? '0%' : `${vSplitOffset}%`,
+            flexBasis: vSplitOffset >= 100 ? 'calc(100% - 20px)' : vSplitOffset <= 0 ? '0%' : `calc(${vSplitOffset}% - 10px)`,
             minWidth: 0,
             display: vSplitOffset <= 0 ? 'none' : 'block'
           }}
@@ -792,9 +792,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
         <div 
           className={`relative h-full flex items-center justify-center select-none z-30 transition-all group hover:bg-blue-50 flex-shrink-0`}
           style={{ 
-            width: '16px',
-            marginLeft: '-8px',
-            marginRight: '-8px',
+            width: '20px',
+            marginLeft: '0',
+            marginRight: '0',
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
@@ -816,8 +816,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           
           {/* Arrow buttons and drag indicator */}
           <div 
-            className="relative flex flex-col gap-0.5 bg-white/95 py-1 px-px rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
-            style={{ width: '12px' }}
+            className="relative flex flex-col gap-1 bg-white/95 py-1.5 px-1 rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
+            style={{ width: '20px' }}
           >
             {/* Left arrow - toggle between middle (50%) and maximize English (0%) */}
             <button
@@ -831,9 +831,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title={vSplitOffset > 50 ? "Center divider" : "Maximize English"}
-              style={{ height: '10px', width: '10px' }}
+              style={{ height: '14px', width: '14px' }}
             >
-              <svg className="w-2 h-2 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -841,11 +841,11 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
             {/* Drag indicator */}
             <div 
               onMouseDown={startResizing}
-              className="flex flex-row gap-px px-0.5 justify-center cursor-col-resize" 
-              style={{ width: '10px' }}
+              className="flex flex-row gap-0.5 px-1 justify-center cursor-col-resize" 
+              style={{ width: '14px' }}
             >
-              <div className="w-px h-3 bg-slate-300"></div>
-              <div className="w-px h-3 bg-slate-300"></div>
+              <div className="w-0.5 h-4 bg-slate-300"></div>
+              <div className="w-0.5 h-4 bg-slate-300"></div>
             </div>
             
             {/* Right arrow - toggle between middle (50%) and maximize Chinese (100%) */}
@@ -860,9 +860,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title={vSplitOffset < 50 ? "Center divider" : "Maximize Chinese"}
-              style={{ height: '10px', width: '10px' }}
+              style={{ height: '14px', width: '14px' }}
             >
-              <svg className="w-2 h-2 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -876,7 +876,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           style={{ 
             flexGrow: vSplitOffset <= 0 ? 1 : 0,
             flexShrink: vSplitOffset <= 0 ? 1 : 0,
-            flexBasis: vSplitOffset <= 0 ? '100%' : vSplitOffset >= 100 ? '0%' : `${100 - vSplitOffset}%`,
+            flexBasis: vSplitOffset <= 0 ? 'calc(100% - 20px)' : vSplitOffset >= 100 ? '0%' : `calc(${100 - vSplitOffset}% - 10px)`,
             minWidth: 0,
             display: vSplitOffset >= 100 ? 'none' : 'block'
           }}

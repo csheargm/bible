@@ -292,7 +292,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText }) => {
     if (isResizing && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const percentage = ((e.clientX - rect.left) / rect.width) * 100;
-      if (percentage > 25 && percentage < 75) setVSplitOffset(percentage);
+      if (percentage >= 0 && percentage <= 100) setVSplitOffset(percentage);
     }
   }, [isResizing]);
 
@@ -318,7 +318,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText }) => {
           ref={zhScrollRef} 
           onScroll={() => syncScroll('zh')}
           className="overflow-y-auto p-4 space-y-6 border-r border-slate-200 bg-white"
-          style={{ width: `${vSplitOffset}%` }}
+          style={{ 
+            flexGrow: vSplitOffset >= 100 ? 1 : 0,
+            flexShrink: vSplitOffset >= 100 ? 1 : 0,
+            flexBasis: vSplitOffset >= 100 ? 'calc(100% - 20px)' : vSplitOffset <= 0 ? '0%' : `calc(${vSplitOffset}% - 10px)`,
+            minWidth: 0,
+            display: vSplitOffset <= 0 ? 'none' : 'block'
+          }}
         >
           <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 sticky top-0 bg-white/90 backdrop-blur-md z-10 py-2 flex items-center gap-2">
             <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
@@ -343,10 +349,83 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText }) => {
 
         {/* Vertical Splitter */}
         <div 
-          onMouseDown={startResizing}
-          className={`w-1.5 h-full cursor-col-resize z-20 transition-all flex items-center justify-center ${isResizing ? 'bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-slate-200 hover:bg-indigo-400'}`}
+          className={`relative h-full flex items-center justify-center select-none z-30 transition-all group hover:bg-blue-50 flex-shrink-0`}
+          style={{ 
+            width: '20px',
+            marginLeft: '0',
+            marginRight: '0',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none'
+          }}
         >
-          <div className="h-12 w-1 bg-white/60 rounded-full shadow-sm"></div>
+          {/* Visible divider bar */}
+          <div 
+            className={`absolute h-full ${isResizing ? 'w-2 bg-indigo-500' : 'w-1 bg-slate-200 group-hover:bg-indigo-400 group-hover:w-2'} transition-all`}
+            style={{
+              boxShadow: isResizing ? '2px 0 4px rgba(99, 102, 241, 0.3), -2px 0 4px rgba(99, 102, 241, 0.3)' : '1px 0 2px rgba(0, 0, 0, 0.05)'
+            }}
+          />
+          
+          <div 
+            onMouseDown={startResizing}
+            className="absolute w-full h-full cursor-col-resize"
+          />
+          
+          {/* Arrow buttons and drag indicator */}
+          <div 
+            className="relative flex flex-col gap-1 bg-white/95 py-1.5 px-1 rounded-full shadow-sm border border-slate-200 hover:border-blue-300 z-40 cursor-col-resize transition-colors" 
+            style={{ width: '20px' }}
+          >
+            {/* Left arrow - toggle between middle (50%) and maximize English (0%) */}
+            <button
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // If on right side (>50%), go to middle (50%)
+                // If at middle or left side (<=50%), maximize English (0%)
+                setVSplitOffset(vSplitOffset > 50 ? 50 : 0);
+              }}
+              className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
+              title={vSplitOffset > 50 ? "Center divider" : "Maximize English"}
+              style={{ height: '14px', width: '14px' }}
+            >
+              <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            {/* Drag indicator */}
+            <div 
+              onMouseDown={startResizing}
+              className="flex flex-row gap-0.5 px-1 justify-center cursor-col-resize" 
+              style={{ width: '14px' }}
+            >
+              <div className="w-0.5 h-4 bg-slate-300"></div>
+              <div className="w-0.5 h-4 bg-slate-300"></div>
+            </div>
+            
+            {/* Right arrow - toggle between middle (50%) and maximize Chinese (100%) */}
+            <button
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // If on left side (<50%), go to middle (50%)
+                // If at middle or right side (>=50%), maximize Chinese (100%)
+                setVSplitOffset(vSplitOffset < 50 ? 50 : 100);
+              }}
+              className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
+              title={vSplitOffset < 50 ? "Center divider" : "Maximize Chinese"}
+              style={{ height: '14px', width: '14px' }}
+            >
+              <svg className="w-3 h-3 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* English Side */}
@@ -354,7 +433,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText }) => {
           ref={enScrollRef} 
           onScroll={() => syncScroll('en')}
           className="overflow-y-auto p-4 space-y-6 bg-slate-50/50"
-          style={{ width: `${100 - vSplitOffset}%` }}
+          style={{ 
+            flexGrow: vSplitOffset <= 0 ? 1 : 0,
+            flexShrink: vSplitOffset <= 0 ? 1 : 0,
+            flexBasis: vSplitOffset <= 0 ? 'calc(100% - 20px)' : vSplitOffset >= 100 ? '0%' : `calc(${100 - vSplitOffset}% - 10px)`,
+            minWidth: 0,
+            display: vSplitOffset >= 100 ? 'none' : 'block'
+          }}
         >
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 sticky top-0 bg-slate-50/90 backdrop-blur-md z-10 py-2 flex items-center gap-2">
             <span className="w-2 h-2 bg-slate-300 rounded-full"></span>
