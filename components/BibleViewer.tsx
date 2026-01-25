@@ -756,7 +756,11 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           onScroll={() => handleScroll('left')}
           className="overflow-y-auto p-4 md:p-6 space-y-4 font-serif-sc border-r border-slate-100"
           style={{ 
-            width: vSplitOffset >= 99 ? 'calc(100% - 16px)' : vSplitOffset <= 1 ? '0' : `calc(${vSplitOffset}% - 8px)`
+            flexGrow: vSplitOffset >= 100 ? 1 : 0,
+            flexShrink: vSplitOffset >= 100 ? 1 : 0,
+            flexBasis: vSplitOffset >= 100 ? '100%' : vSplitOffset <= 0 ? '0%' : `${vSplitOffset}%`,
+            minWidth: 0,
+            display: vSplitOffset <= 0 ? 'none' : 'block'
           }}
         >
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">和合本 CUV</div>
@@ -870,7 +874,11 @@ const BibleViewer: React.FC<BibleViewerProps> = ({ onSelectionChange, onVersesSe
           onScroll={() => handleScroll('right')}
           className="overflow-y-auto p-4 md:p-6 space-y-4 font-sans"
           style={{ 
-            width: vSplitOffset <= 1 ? 'calc(100% - 16px)' : vSplitOffset >= 99 ? '0' : `calc(${100 - vSplitOffset}% - 8px)`
+            flexGrow: vSplitOffset <= 0 ? 1 : 0,
+            flexShrink: vSplitOffset <= 0 ? 1 : 0,
+            flexBasis: vSplitOffset <= 0 ? '100%' : vSplitOffset >= 100 ? '0%' : `${100 - vSplitOffset}%`,
+            minWidth: 0,
+            display: vSplitOffset >= 100 ? 'none' : 'block'
           }}
         >
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">English (WEB)</div>
