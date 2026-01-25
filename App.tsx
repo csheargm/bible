@@ -17,7 +17,7 @@ const App: React.FC = () => {
                  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
   const isMobile = isIPhone || isIPad;
   
-  const [splitOffset, setSplitOffset] = useState(isMobile ? 67 : 100); // Mobile: 2/3, Desktop: maximized
+  const [splitOffset, setSplitOffset] = useState(100); // Always start maximized (full screen Bible)
   const [bottomSplitOffset, setBottomSplitOffset] = useState(67); // Default to 2/3 for chat, 1/3 for notebook
   const [isResizing, setIsResizing] = useState(false);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
