@@ -53,12 +53,12 @@ const App: React.FC = () => {
         setSplitOffset(100);
         break;
       case 'notes':
-        // Split 50/50, notes area takes full bottom space
+        // Split 50/50, notes area takes full bottom space (chat at 0%)
         setSplitOffset(50);
         setBottomSplitOffset(0);
         break;
       case 'research':
-        // Split 50/50, chat takes full bottom space
+        // Split 50/50, chat takes full bottom space (notes at 0%)
         setSplitOffset(50);
         setBottomSplitOffset(100);
         break;

@@ -124,7 +124,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [showStudio, setShowStudio] = useState(false);
-  const [vSplitOffset, setVSplitOffset] = useState(50);
+  const [vSplitOffset, setVSplitOffset] = useState(100); // Default to 100% - show only conversation, hide English panel
   const [isResizing, setIsResizing] = useState(false);
   const [speakingMsgIndex, setSpeakingMsgIndex] = useState<{zh?: number | null, en?: number | null}>({});
   const [studioConfig, setStudioConfig] = useState<{ aspect: AspectRatio; size: ImageSize; type: 'image' | 'video' }>({
