@@ -497,9 +497,6 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   const handleVerseClick = (verseNum: number, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // In reading mode, don't respond to verse clicks
-    if (isReadingMode) return;
-    
     const selection = window.getSelection()?.toString();
     if (selection && selection.length > 0) return;
 
@@ -775,11 +772,11 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
           onScroll={() => handleScroll('left')}
           className="overflow-y-auto p-4 md:p-6 space-y-4 font-serif-sc border-r border-slate-100"
           style={{ 
-            flexGrow: isResearchMode || vSplitOffset >= 100 ? 1 : 0,
-            flexShrink: isResearchMode || vSplitOffset >= 100 ? 1 : 0,
-            flexBasis: isResearchMode ? '100%' : vSplitOffset >= 100 ? 'calc(100% - 20px)' : vSplitOffset <= 0 ? '0%' : `calc(${vSplitOffset}% - 10px)`,
+            flexGrow: vSplitOffset >= 100 ? 1 : 0,
+            flexShrink: vSplitOffset >= 100 ? 1 : 0,
+            flexBasis: vSplitOffset >= 100 ? 'calc(100% - 20px)' : vSplitOffset <= 0 ? '0%' : `calc(${vSplitOffset}% - 10px)`,
             minWidth: 0,
-            display: vSplitOffset <= 0 && !isResearchMode ? 'none' : 'block'
+            display: vSplitOffset <= 0 ? 'none' : 'block'
           }}
         >
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">和合本 CUV</div>
@@ -793,10 +790,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                 key={`left-${v.verse}`}
                 onClick={(e) => handleVerseClick(v.verse, e)}
                 className={`p-2.5 rounded-lg transition-all border relative ${
-                  selectedVerses.includes(v.verse) && !isReadingMode ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 
-                  isReadingMode ? 'border-transparent' : 'border-transparent hover:bg-slate-50'
+                  selectedVerses.includes(v.verse) ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'border-transparent hover:bg-slate-50'
                 }`}
-                style={{ cursor: isReadingMode ? 'default' : 'pointer' }}
+                style={{ cursor: 'pointer' }}
               >
                 <span className="text-indigo-500 font-bold mr-3 text-xs">{v.verse}</span>
                 <span className="text-lg leading-relaxed text-slate-800">{processChineseText(v.text)}</span>
@@ -819,8 +815,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
-            userSelect: 'none',
-            display: isResearchMode ? 'none' : 'flex'
+            userSelect: 'none'
           }}
         >
           {/* Visible divider bar */}
@@ -901,7 +896,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             flexShrink: vSplitOffset <= 0 ? 1 : 0,
             flexBasis: vSplitOffset <= 0 ? 'calc(100% - 20px)' : vSplitOffset >= 100 ? '0%' : `calc(${100 - vSplitOffset}% - 10px)`,
             minWidth: 0,
-            display: isResearchMode || vSplitOffset >= 100 ? 'none' : 'block'
+            display: vSplitOffset >= 100 ? 'none' : 'block'
           }}
         >
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">English (WEB)</div>
@@ -915,10 +910,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                 key={`right-${v.verse}`}
                 onClick={(e) => handleVerseClick(v.verse, e)}
                 className={`p-2.5 rounded-lg transition-all border ${
-                  selectedVerses.includes(v.verse) && !isReadingMode ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 
-                  isReadingMode ? 'border-transparent' : 'border-transparent hover:bg-slate-50'
+                  selectedVerses.includes(v.verse) ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'border-transparent hover:bg-slate-50'
                 }`}
-                style={{ cursor: isReadingMode ? 'default' : 'pointer' }}
+                style={{ cursor: 'pointer' }}
               >
                 <span className="text-indigo-400 font-bold mr-3 text-xs">{v.verse}</span>
                 <span className="text-base leading-relaxed text-slate-700 italic">{v.text}</span>
