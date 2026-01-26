@@ -393,6 +393,19 @@ const App: React.FC = () => {
             isIPhone={isIPhone}
             isReadingMode={appMode === 'reading'}
             isResearchMode={appMode === 'research'}
+            currentMode={appMode}
+            onModeChange={(mode) => {
+              setAppMode(mode);
+              if (mode === 'reading') {
+                setSplitOffset(100);
+              } else if (mode === 'notes') {
+                setSplitOffset(50);
+                setBottomSplitOffset(0);
+              } else if (mode === 'research') {
+                setSplitOffset(50);
+                setBottomSplitOffset(100);
+              }
+            }}
             onDownloadStateChange={(downloading, progress, status, timeRemaining) => {
               setIsDownloading(downloading);
               setDownloadProgress(progress);

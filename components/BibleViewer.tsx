@@ -16,6 +16,8 @@ interface BibleViewerProps {
   isResearchMode?: boolean;
   onDownloadStateChange?: (isDownloading: boolean, progress: number, status?: string, timeRemaining?: string) => void;
   onDownloadFunctionsReady?: (downloadBible: () => void, downloadChapter: () => void, downloadBook: () => void) => void;
+  currentMode?: 'reading' | 'notes' | 'research';
+  onModeChange?: (mode: 'reading' | 'notes' | 'research') => void;
 }
 
 
@@ -30,7 +32,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   isReadingMode = false,
   isResearchMode = false,
   onDownloadStateChange,
-  onDownloadFunctionsReady 
+  onDownloadFunctionsReady,
+  currentMode = 'reading',
+  onModeChange
 }) => {
   const [selectedBook, setSelectedBook] = useState<Book>(BIBLE_BOOKS[0]);
   const [selectedChapter, setSelectedChapter] = useState(1);
@@ -69,6 +73,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   const [bookSearchTerm, setBookSearchTerm] = useState('');
   const [showBookDropdown, setShowBookDropdown] = useState(false);
   const bookSearchRef = useRef<HTMLDivElement>(null);
+  
+  // Mobile menu state
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   
   const [vSplitOffset, setVSplitOffset] = useState(100); // Start with Chinese maximized
   const [isResizing, setIsResizing] = useState(false);
@@ -121,11 +129,14 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     // Only adjacent chapters are preloaded above
   }, [selectedBook, selectedChapter]);
   
-  // Handle clicking outside book dropdown
+  // Handle clicking outside book dropdown and mobile menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (bookSearchRef.current && !bookSearchRef.current.contains(event.target as Node)) {
         setShowBookDropdown(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setShowMobileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -985,8 +996,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
       onClick={handleEmptySpaceClick}
       onMouseUp={handleMouseUp}
     >
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50 sticky top-0 z-10 shrink-0 shadow-sm" onClick={e => e.stopPropagation()}>
-        <div className="flex gap-3 items-center">
+      <div className={`flex items-center justify-between px-3 py-2 border-b bg-slate-50 sticky top-0 z-10 shrink-0 shadow-sm ${isIPhone ? 'gap-2' : ''}`} onClick={e => e.stopPropagation()}>
+        <div className={`flex ${isIPhone ? 'gap-1' : 'gap-3'} items-center`}>
           {/* App Title integrated into Bible controls - responsive positioning */}
           <div 
             className={`flex items-center gap-2 ${!showSidebarToggle ? 'cursor-pointer' : ''}`}
@@ -1005,7 +1016,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
               </svg>
             )}
           </div>
-          <div className="h-6 w-[1px] bg-slate-300"></div>
+          {!isIPhone && <div className="h-6 w-[1px] bg-slate-300"></div>}
           <button 
             onClick={() => navigateChapter('prev')}
             disabled={!canNavigatePrev}
@@ -1019,7 +1030,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
           <div className="relative" ref={bookSearchRef}>
             <input
               type="text"
-              className="p-1.5 rounded border bg-white text-sm focus:ring-2 focus:ring-indigo-500 font-medium w-40"
+              className={`p-1.5 rounded border bg-white text-sm focus:ring-2 focus:ring-indigo-500 font-medium ${isIPhone ? 'w-24' : 'w-40'}`}
               value={showBookDropdown ? bookSearchTerm : selectedBook.name}
               onChange={(e) => setBookSearchTerm(e.target.value)}
               onFocus={() => {
@@ -1054,7 +1065,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             )}
           </div>
           <select 
-            className="p-1.5 rounded border bg-white text-sm focus:ring-2 focus:ring-indigo-500 font-medium w-24"
+            className={`p-1.5 rounded border bg-white text-sm focus:ring-2 focus:ring-indigo-500 font-medium ${isIPhone ? 'w-16' : 'w-24'}`}
             value={selectedChapter}
             onChange={(e) => setSelectedChapter(Number(e.target.value))}
           >
@@ -1062,7 +1073,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
               const isOffline = offlineChapters.has(`${selectedBook.id}_${num}`);
               return (
                 <option key={num} value={num}>
-                  {isOffline ? '✓ ' : ''}第 {num} 章
+                  {isOffline ? '✓ ' : ''}{isIPhone ? num : `第 ${num} 章`}
                 </option>
               );
             })}
@@ -1078,14 +1089,54 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             </svg>
           </button>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={toggleChineseMode}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-slate-200 hover:border-indigo-300 transition-colors shadow-sm"
-            title="切换简繁体"
-          >
-            <span className="text-xs font-medium text-slate-600">{isSimplified ? '简' : '繁'}</span>
-          </button>
+        <div className={`flex items-center ${isIPhone ? 'gap-1' : 'gap-3'}`}>
+          {/* Mode Selector - Hidden on iPhone */}
+          {onModeChange && !isIPhone && (
+            <div className="flex items-center gap-1 px-1 py-1 bg-white rounded-full border border-slate-200 shadow-sm">
+              <button
+                onClick={() => onModeChange('reading')}
+                className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                  currentMode === 'reading' 
+                    ? 'bg-indigo-500 text-white' 
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                title="阅读模式"
+              >
+                📖
+              </button>
+              <button
+                onClick={() => onModeChange('notes')}
+                className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                  currentMode === 'notes' 
+                    ? 'bg-indigo-500 text-white' 
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                title="笔记模式"
+              >
+                ✏️
+              </button>
+              <button
+                onClick={() => onModeChange('research')}
+                className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                  currentMode === 'research' 
+                    ? 'bg-indigo-500 text-white' 
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                title="研究模式"
+              >
+                🔍
+              </button>
+            </div>
+          )}
+          {!isIPhone && (
+            <button
+              onClick={toggleChineseMode}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-slate-200 hover:border-indigo-300 transition-colors shadow-sm"
+              title="切换简繁体"
+            >
+              <span className="text-xs font-medium text-slate-600">{isSimplified ? '简' : '繁'}</span>
+            </button>
+          )}
           <div className="flex items-center gap-1 px-2 py-1 bg-white rounded-full border border-slate-200 shadow-sm">
             <button
               onClick={() => adjustFontSize(-2)}
@@ -1148,6 +1199,85 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             {selectedVerses.length === leftVerses.length && leftVerses.length > 0 ? '已选全章' : (selectedVerses.length > 0 ? `已选 ${selectedVerses.length} 节` : '点击经文或高亮文字')}
           </div>
           <div className="h-4 w-[1px] bg-slate-200 hidden lg:block"></div>
+          
+          {/* Mobile Menu Button for iPhone */}
+          {isIPhone && (
+            <div className="relative" ref={mobileMenuRef}>
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-1.5 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
+                title="更多选项"
+              >
+                <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+              
+              {showMobileMenu && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-50">
+                  {/* Mode Selector */}
+                  {onModeChange && (
+                    <div className="p-2 border-b border-slate-100">
+                      <div className="text-xs font-semibold text-slate-500 mb-2">模式</div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => {
+                            onModeChange('reading');
+                            setShowMobileMenu(false);
+                          }}
+                          className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            currentMode === 'reading' 
+                              ? 'bg-indigo-500 text-white' 
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          📖 阅读
+                        </button>
+                        <button
+                          onClick={() => {
+                            onModeChange('notes');
+                            setShowMobileMenu(false);
+                          }}
+                          className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            currentMode === 'notes' 
+                              ? 'bg-indigo-500 text-white' 
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          ✏️ 笔记
+                        </button>
+                        <button
+                          onClick={() => {
+                            onModeChange('research');
+                            setShowMobileMenu(false);
+                          }}
+                          className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            currentMode === 'research' 
+                              ? 'bg-indigo-500 text-white' 
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          🔍 研究
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Chinese Mode Toggle */}
+                  <button
+                    onClick={() => {
+                      toggleChineseMode();
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors"
+                  >
+                    <span className="text-slate-700">切换简繁体</span>
+                    <span className="float-right text-slate-500">{isSimplified ? '简' : '繁'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-full border border-slate-200 shadow-sm">
              <div className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-green-500' : 'bg-indigo-500 animate-pulse'}`}></div>
              <span className="text-[10px] font-bold text-slate-500">{isOffline ? '离线模式' : '在线'}</span>
