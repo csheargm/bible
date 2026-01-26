@@ -17,6 +17,9 @@ const App: React.FC = () => {
                  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
   const isMobile = isIPhone || isIPad;
   
+  // Track current mode implicitly based on layout
+  const [appMode, setAppMode] = useState<'reading' | 'notes' | 'research'>('reading');
+  
   const [splitOffset, setSplitOffset] = useState(100); // Always start maximized (full screen Bible)
   const [bottomSplitOffset, setBottomSplitOffset] = useState(67); // Default to 2/3 for chat, 1/3 for notebook
   const [isResizing, setIsResizing] = useState(false);
@@ -44,17 +47,38 @@ const App: React.FC = () => {
   const handleSelectionChange = useCallback((selection: SelectionInfo | null) => {
     setCurrentSelection(selection);
     
-    // When a verse is selected, optimize layout for note-taking
-    if (selection) {
+    // When a verse is selected, switch to notes mode
+    if (selection && appMode !== 'notes') {
+      setAppMode('notes');
       // If Bible is maximized, move to 50% to show notes area
       if (splitOffset >= 90) {
         setSplitOffset(50);
       }
       // Give full width to notes view, completely hide chat
       setBottomSplitOffset(0);
+    } else if (selection && appMode === 'notes') {
+      // Already in notes mode, just update selection
+      if (splitOffset >= 90) {
+        setSplitOffset(50);
+      }
     }
-  }, [splitOffset]);
+  }, [splitOffset, appMode]);
   
+  // Update mode based on layout changes
+  useEffect(() => {
+    // Detect research mode: chat is visible (bottomSplitOffset > 50)
+    if (bottomSplitOffset > 50 && splitOffset < 90) {
+      setAppMode('research');
+    }
+    // Detect notes mode: notes are visible (bottomSplitOffset < 50) 
+    else if (bottomSplitOffset < 50 && splitOffset < 90) {
+      setAppMode('notes');
+    }
+    // Detect reading mode: Bible is maximized
+    else if (splitOffset >= 90) {
+      setAppMode('reading');
+    }
+  }, [splitOffset, bottomSplitOffset]);
   
   // Load notes from IndexedDB on mount and migrate from localStorage if needed
   useEffect(() => {
@@ -361,12 +385,14 @@ const App: React.FC = () => {
         }}>
           <BibleViewer 
             notes={notes}
-            onSelectionChange={handleSelectionChange}
+            onSelectionChange={appMode !== 'reading' ? handleSelectionChange : undefined}
             onVersesSelectedForChat={(text) => setSelectionPayload({ text, id: Date.now() })}
             sidebarOpen={isSidebarOpen}
             showSidebarToggle={!isIPhone} // Pass iPhone detection to BibleViewer
             onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} // Allow title tap to open sidebar on iPhone
             isIPhone={isIPhone}
+            isReadingMode={appMode === 'reading'}
+            isResearchMode={appMode === 'research'}
             onDownloadStateChange={(downloading, progress) => {
               setIsDownloading(downloading);
               setDownloadProgress(progress);
