@@ -12,8 +12,6 @@ interface BibleViewerProps {
   showSidebarToggle?: boolean;
   onSidebarToggle?: () => void;
   isIPhone?: boolean;
-  isReadingMode?: boolean;
-  isResearchMode?: boolean;
   onDownloadStateChange?: (isDownloading: boolean, progress: number) => void;
   onDownloadFunctionsReady?: (downloadBible: () => void, downloadChapter: () => void) => void;
 }
@@ -27,8 +25,6 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   showSidebarToggle = true,
   onSidebarToggle,
   isIPhone = false,
-  isReadingMode = false,
-  isResearchMode = false,
   onDownloadStateChange,
   onDownloadFunctionsReady 
 }) => {
@@ -482,14 +478,16 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
       }).join('\n\n');
     }
 
-    onSelectionChange({
-      bookId: selectedBook.id,
-      bookName: selectedBook.name,
-      chapter: selectedChapter,
-      verseNums,
-      id,
-      selectedRawText: fullText
-    });
+    if (onSelectionChange) {
+      onSelectionChange({
+        bookId: selectedBook.id,
+        bookName: selectedBook.name,
+        chapter: selectedChapter,
+        verseNums,
+        id,
+        selectedRawText: fullText
+      });
+    }
 
     onVersesSelectedForChat(fullText);
   }, [selectedBook, selectedChapter, leftVerses, rightVerses, onSelectionChange, onVersesSelectedForChat]);

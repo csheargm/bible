@@ -17,9 +17,6 @@ const App: React.FC = () => {
                  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
   const isMobile = isIPhone || isIPad;
   
-  // App modes: 'reading' | 'notes' | 'research' - kept for logic but no UI switcher
-  const [appMode, setAppMode] = useState<'reading' | 'notes' | 'research'>('notes');
-  
   const [splitOffset, setSplitOffset] = useState(100); // Always start maximized (full screen Bible)
   const [bottomSplitOffset, setBottomSplitOffset] = useState(67); // Default to 2/3 for chat, 1/3 for notebook
   const [isResizing, setIsResizing] = useState(false);
@@ -43,28 +40,6 @@ const App: React.FC = () => {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [notesLoading, setNotesLoading] = useState(true);
   
-  // Handle mode changes
-  const handleModeChange = useCallback((newMode: 'reading' | 'notes' | 'research') => {
-    setAppMode(newMode);
-    
-    switch (newMode) {
-      case 'reading':
-        // Maximize Bible view
-        setSplitOffset(100);
-        break;
-      case 'notes':
-        // Split 50/50, notes area takes full bottom space (chat at 0%)
-        setSplitOffset(50);
-        setBottomSplitOffset(0);
-        break;
-      case 'research':
-        // Split 50/50, chat takes full bottom space (notes at 0%)
-        setSplitOffset(50);
-        setBottomSplitOffset(100);
-        break;
-    }
-  }, []);
-
   // Handle selection change - auto-position divider for note-taking
   const handleSelectionChange = useCallback((selection: SelectionInfo | null) => {
     setCurrentSelection(selection);
@@ -77,7 +52,6 @@ const App: React.FC = () => {
       }
       // Give full width to notes view, completely hide chat
       setBottomSplitOffset(0);
-      setAppMode('notes'); // Auto-switch to notes mode when selecting verses
     }
   }, [splitOffset]);
   
