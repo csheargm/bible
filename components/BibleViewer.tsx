@@ -873,16 +873,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
       // Don't start swipe if verses are selected (user might be trying to copy)
       if (selectedVerses.length > 0) return;
       
-      // Check if touch started on a verse element
-      const target = e.target as HTMLElement;
-      const isOnVerse = target.closest('.p-1.rounded-lg') || 
-                        target.tagName === 'SPAN' ||
-                        target.closest('[onclick]');
-      if (isOnVerse) {
-        // User is likely trying to select verse text, don't start swipe
-        return;
-      }
-      
+      // Allow swiping from anywhere on the screen
+      // Store the starting position for swipe detection
       setTouchStartX(e.touches[0].clientX);
       setIsSwiping(false);
       setSwipeOffset(0);
@@ -911,7 +903,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     
     const diff = e.touches[0].clientX - touchStartX;
     
-    if (Math.abs(diff) > 10) {
+    if (Math.abs(diff) > 5) {  // Lower threshold for more responsive swiping
       setIsSwiping(true);
       // Update swipe offset for visual feedback
       const maxOffset = window.innerWidth * 0.4;
@@ -925,7 +917,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     if (touchStartX === null || !isSwiping || !isReadingMode) return;
     const diff = e.changedTouches[0].clientX - touchStartX;
     
-    if (Math.abs(diff) > 50) {
+    if (Math.abs(diff) > 30) {  // Lower threshold for easier page flipping
       // Complete the page flip animation
       setIsPageFlipping(true);
       const targetOffset = diff > 0 ? window.innerWidth : -window.innerWidth;
