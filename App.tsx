@@ -17,6 +17,9 @@ const App: React.FC = () => {
                  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
   const isMobile = isIPhone || isIPad;
   
+  // App modes: 'reading' | 'notes' | 'research'
+  const [appMode, setAppMode] = useState<'reading' | 'notes' | 'research'>('reading');
+  
   const [splitOffset, setSplitOffset] = useState(100); // Always start maximized (full screen Bible)
   const [bottomSplitOffset, setBottomSplitOffset] = useState(67); // Default to 2/3 for chat, 1/3 for notebook
   const [isResizing, setIsResizing] = useState(false);
@@ -40,12 +43,34 @@ const App: React.FC = () => {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [notesLoading, setNotesLoading] = useState(true);
   
+  // Handle mode changes
+  const handleModeChange = useCallback((newMode: 'reading' | 'notes' | 'research') => {
+    setAppMode(newMode);
+    
+    switch (newMode) {
+      case 'reading':
+        // Maximize Bible view
+        setSplitOffset(100);
+        break;
+      case 'notes':
+        // Split 50/50, notes area takes full bottom space
+        setSplitOffset(50);
+        setBottomSplitOffset(0);
+        break;
+      case 'research':
+        // Split 50/50, chat takes full bottom space
+        setSplitOffset(50);
+        setBottomSplitOffset(100);
+        break;
+    }
+  }, []);
+
   // Handle selection change - auto-position divider for note-taking
   const handleSelectionChange = useCallback((selection: SelectionInfo | null) => {
     setCurrentSelection(selection);
     
-    // When a verse is selected, optimize layout for note-taking
-    if (selection) {
+    // Only auto-adjust layout in notes mode
+    if (selection && appMode === 'notes') {
       // If Bible is maximized, move to 50% to show notes area
       if (splitOffset >= 90) {
         setSplitOffset(50);
@@ -53,7 +78,12 @@ const App: React.FC = () => {
       // Give full width to notes view, completely hide chat
       setBottomSplitOffset(0);
     }
-  }, [splitOffset]);
+    // In reading mode, don't respond to verse clicks
+    if (appMode === 'reading') {
+      setCurrentSelection(null);
+      return;
+    }
+  }, [splitOffset, appMode]);
   
   
   // Load notes from IndexedDB on mount and migrate from localStorage if needed
@@ -361,12 +391,14 @@ const App: React.FC = () => {
         }}>
           <BibleViewer 
             notes={notes}
-            onSelectionChange={handleSelectionChange}
+            onSelectionChange={appMode !== 'reading' ? handleSelectionChange : undefined}
             onVersesSelectedForChat={(text) => setSelectionPayload({ text, id: Date.now() })}
             sidebarOpen={isSidebarOpen}
             showSidebarToggle={!isIPhone} // Pass iPhone detection to BibleViewer
             onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} // Allow title tap to open sidebar on iPhone
             isIPhone={isIPhone}
+            isReadingMode={appMode === 'reading'}
+            isResearchMode={appMode === 'research'}
             onDownloadStateChange={(downloading, progress) => {
               setIsDownloading(downloading);
               setDownloadProgress(progress);
@@ -409,6 +441,46 @@ const App: React.FC = () => {
             className="absolute w-full h-full cursor-row-resize"
             style={{ zIndex: 20 }}
           ></div>
+          
+          {/* Mode switcher */}
+          <div 
+            className="absolute left-4 flex items-center gap-1 bg-white px-1.5 py-0.5 rounded-full shadow-xl border-2 border-slate-400 transition-colors" 
+            style={{ height: '20px', zIndex: 60 }}
+          >
+            <button
+              onClick={() => handleModeChange('reading')}
+              className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+                appMode === 'reading' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="Reading mode - maximize Bible view"
+            >
+              📖 Reading
+            </button>
+            <button
+              onClick={() => handleModeChange('notes')}
+              className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+                appMode === 'notes' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="Note taking mode - split view with notes"
+            >
+              ✏️ Notes
+            </button>
+            <button
+              onClick={() => handleModeChange('research')}
+              className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+                appMode === 'research' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="Research mode - split view with AI chat"
+            >
+              🔬 Research
+            </button>
+          </div>
           
           {/* Arrow buttons for quick positioning */}
           <div 
