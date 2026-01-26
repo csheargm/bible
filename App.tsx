@@ -43,42 +43,38 @@ const App: React.FC = () => {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [notesLoading, setNotesLoading] = useState(true);
   
-  // Handle selection change - auto-position divider for note-taking
+  // Handle selection change - just update the selection without changing mode
   const handleSelectionChange = useCallback((selection: SelectionInfo | null) => {
     setCurrentSelection(selection);
     
-    // When a verse is selected, switch to notes mode
-    if (selection && appMode !== 'notes') {
-      setAppMode('notes');
+    // If in notes mode and a verse is selected, ensure notes area is visible
+    if (selection && appMode === 'notes') {
       // If Bible is maximized, move to 50% to show notes area
       if (splitOffset >= 90) {
         setSplitOffset(50);
       }
-      // Give full width to notes view, completely hide chat
-      setBottomSplitOffset(0);
-    } else if (selection && appMode === 'notes') {
-      // Already in notes mode, just update selection
-      if (splitOffset >= 90) {
-        setSplitOffset(50);
+      // Make sure notes area is visible
+      if (bottomSplitOffset > 50) {
+        setBottomSplitOffset(0);
       }
     }
-  }, [splitOffset, appMode]);
+  }, [splitOffset, appMode, bottomSplitOffset]);
   
-  // Update mode based on layout changes
-  useEffect(() => {
-    // Detect research mode: chat is visible (bottomSplitOffset > 50)
-    if (bottomSplitOffset > 50 && splitOffset < 90) {
-      setAppMode('research');
-    }
-    // Detect notes mode: notes are visible (bottomSplitOffset < 50) 
-    else if (bottomSplitOffset < 50 && splitOffset < 90) {
-      setAppMode('notes');
-    }
-    // Detect reading mode: Bible is maximized
-    else if (splitOffset >= 90) {
-      setAppMode('reading');
-    }
-  }, [splitOffset, bottomSplitOffset]);
+  // Comment out automatic mode detection to avoid conflicts with manual buttons
+  // useEffect(() => {
+  //   // Detect research mode: chat is visible (bottomSplitOffset > 50)
+  //   if (bottomSplitOffset > 50 && splitOffset < 90) {
+  //     setAppMode('research');
+  //   }
+  //   // Detect notes mode: notes are visible (bottomSplitOffset < 50) 
+  //   else if (bottomSplitOffset < 50 && splitOffset < 90) {
+  //     setAppMode('notes');
+  //   }
+  //   // Detect reading mode: Bible is maximized
+  //   else if (splitOffset >= 90) {
+  //     setAppMode('reading');
+  //   }
+  // }, [splitOffset, bottomSplitOffset]);
   
   // Load notes from IndexedDB on mount and migrate from localStorage if needed
   useEffect(() => {
@@ -409,7 +405,7 @@ const App: React.FC = () => {
           className={`relative w-full flex items-center justify-center select-none z-30 transition-all group hover:bg-blue-50`}
           style={{ 
             flexShrink: 0,
-            height: '24px',
+            height: '32px',
             touchAction: 'none',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
@@ -435,6 +431,60 @@ const App: React.FC = () => {
             className="absolute w-full h-full cursor-row-resize"
             style={{ zIndex: 20 }}
           ></div>
+          
+          {/* Mode switcher - visible on all devices */}
+          <div 
+            className="absolute left-2 flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 transition-colors" 
+            style={{ height: '28px', zIndex: 60 }}
+          >
+            <button
+              onClick={() => {
+                setAppMode('reading');
+                setSplitOffset(100);
+              }}
+              className={`px-3 py-1 text-sm font-bold rounded-full transition-all flex items-center justify-center ${
+                appMode === 'reading' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              style={{ minWidth: '32px', height: '22px' }}
+              title="Reading mode - maximize Bible view"
+            >
+              📖
+            </button>
+            <button
+              onClick={() => {
+                setAppMode('notes');
+                setSplitOffset(50);
+                setBottomSplitOffset(0);
+              }}
+              className={`px-3 py-1 text-sm font-bold rounded-full transition-all flex items-center justify-center ${
+                appMode === 'notes' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              style={{ minWidth: '32px', height: '22px' }}
+              title="Note taking mode - split view with notes"
+            >
+              ✏️
+            </button>
+            <button
+              onClick={() => {
+                setAppMode('research');
+                setSplitOffset(50);
+                setBottomSplitOffset(100);
+              }}
+              className={`px-3 py-1 text-sm font-bold rounded-full transition-all flex items-center justify-center ${
+                appMode === 'research' 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              style={{ minWidth: '32px', height: '22px' }}
+              title="Research mode - split view with AI chat"
+            >
+              🔬
+            </button>
+          </div>
           
           {/* Arrow buttons for quick positioning */}
           <div 
