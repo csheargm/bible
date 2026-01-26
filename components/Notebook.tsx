@@ -45,15 +45,17 @@ const Notebook: React.FC<NotebookProps> = ({ selection, onSaveNote, initialConte
     const hasDrawing = !!drawing && drawing.length > 200; 
     if (hasDrawing) return false;
 
+    // Check if it's just the auto-inserted verse quote with no additional content
+    const isJustQuote = html && html.includes('<blockquote') && 
+                        (html.endsWith('</blockquote><p><br></p>') || 
+                         html.endsWith('</blockquote><p><br/></p>') ||
+                         html.endsWith('</blockquote><p></p>'));
+    if (isJustQuote) return true;
+
     const stripped = html.replace(/<[^>]*>/g, '').trim();
     if (stripped.length === 0) return true;
 
-    const hasBlockquote = html.includes('blockquote');
-    if (hasBlockquote) {
-      return stripped.length < 5; 
-    }
-
-    return stripped.length === 0;
+    return false;
   };
 
   const performSave = (id: string, currentNoteData: NoteData) => {
@@ -146,6 +148,7 @@ const Notebook: React.FC<NotebookProps> = ({ selection, onSaveNote, initialConte
 
         data.text = `<blockquote class="border-l-4 border-indigo-500 pl-4 py-1 my-4 bg-slate-50 italic text-slate-600"><strong>${reference}</strong><br/>${displayQuote}</blockquote><p><br></p>`;
         
+        // Don't mark as dirty - this is just the auto-inserted quote, not user content
         isDirtyRef.current = false;
         setIsSaved(true);
       } else {
@@ -260,6 +263,10 @@ const Notebook: React.FC<NotebookProps> = ({ selection, onSaveNote, initialConte
     const currentHTML = editorRef.current?.innerHTML || '';
     const currentText = currentHTML.replace(/<[^>]*>/g, '').trim();
     
+    // Check if there's any meaningful content change
+    const previousText = noteData.text.replace(/<[^>]*>/g, '').trim();
+    const hasContentChanged = currentText !== previousText && currentText.length > 0;
+    
     // Insert timestamp when:
     // 1. Starting a new note (empty note, first input)
     // 2. After 2+ minutes of idle time
@@ -277,7 +284,7 @@ const Notebook: React.FC<NotebookProps> = ({ selection, onSaveNote, initialConte
                                   (timeSinceLastActivity > 2 * 60 * 1000 || 
                                    (!noteData.text || noteData.text === '<p><br></p>' || isJustQuote));
     
-    if (shouldInsertTimestamp) {
+    if (shouldInsertTimestamp && hasContentChanged) {
       console.log('Inserting timestamp - idle time:', timeSinceLastActivity);
       insertTimestamp();
       hasInsertedTimestamp.current = true;
@@ -289,12 +296,15 @@ const Notebook: React.FC<NotebookProps> = ({ selection, onSaveNote, initialConte
     // Update noteData.text to keep it in sync
     setNoteData(prev => ({ ...prev, text: currentHTML }));
     
-    setIsSaved(false);
-    isDirtyRef.current = true; 
-    if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = window.setTimeout(() => {
-      if (currentIdRef.current) performSave(currentIdRef.current, { ...noteData, text: currentHTML });
-    }, 2000);
+    // Only mark as dirty if content actually changed
+    if (hasContentChanged) {
+      setIsSaved(false);
+      isDirtyRef.current = true; 
+      if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = window.setTimeout(() => {
+        if (currentIdRef.current) performSave(currentIdRef.current, { ...noteData, text: currentHTML });
+      }, 2000);
+    }
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
