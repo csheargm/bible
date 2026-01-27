@@ -6,7 +6,7 @@ import { ChatMessage, AspectRatio, ImageSize } from '../types';
 import * as aiService from '../services/gemini';
 
 interface ChatInterfaceProps {
-  incomingText?: { text: string; id: number } | null;
+  incomingText?: { text: string; id: number; clearChat?: boolean } | null;
 }
 
 const parseMessage = (content: string, role: string) => {
@@ -143,13 +143,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText }) => {
     if (incomingText && incomingText.id !== lastPayloadId.current) {
       lastPayloadId.current = incomingText.id;
       
+      // Clear chat history if requested
+      if (incomingText.clearChat) {
+        setMessages([]);
+        setUserQuestion('');
+      }
+      
       const verseText = incomingText.text.trim();
       if (!verseText) {
         setInput(userQuestion);
       } else {
-        const prefix = "简介要点:\n\n";
-        const suffix = userQuestion.trim() ? `\n\n我的额外问题是：\n${userQuestion}` : "";
-        setInput(`${prefix}${verseText}${suffix}`);
+        // If clearChat is true (from context menu), don't add prefix/suffix
+        if (incomingText.clearChat) {
+          setInput(verseText);
+        } else {
+          const prefix = "简介要点:\n\n";
+          const suffix = userQuestion.trim() ? `\n\n我的额外问题是：\n${userQuestion}` : "";
+          setInput(`${prefix}${verseText}${suffix}`);
+        }
       }
     }
   }, [incomingText, userQuestion]);

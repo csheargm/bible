@@ -7,7 +7,7 @@ import { readingHistory } from '../services/readingHistory';
 
 interface BibleViewerProps {
   onSelectionChange?: (info: SelectionInfo) => void;
-  onVersesSelectedForChat: (text: string) => void;
+  onVersesSelectedForChat: (text: string, clearChat?: boolean) => void;
   notes: Record<string, string>;
   sidebarOpen?: boolean;
   showSidebarToggle?: boolean;
@@ -847,6 +847,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
 
   // Helper function to handle mode change with verse selection
   const handleModeChangeWithSelection = (mode: 'reading' | 'notes' | 'research') => {
+    // Immediately clear browser selection to prevent selection issues
+    window.getSelection()?.removeAllRanges();
+    document.getSelection()?.removeAllRanges();
+    
     // When switching from reading mode to notes/research with selected text
     if (currentMode === 'reading' && currentSelectedText && (mode === 'notes' || mode === 'research')) {
       // Find the verse containing the selected text
@@ -871,9 +875,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
           };
           onSelectionChange?.(selectionInfo);
         } else {
-          // For research mode, notify and send text to chat
+          // For research mode, notify and send text to chat with clearChat flag
           notifySelection([verseContainingText.verse], currentSelectedText);
-          onVersesSelectedForChat(currentSelectedText);
+          onVersesSelectedForChat(currentSelectedText, true);
         }
       }
     }
@@ -882,10 +886,16 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     if (mode === 'reading') {
       setCurrentSelectedText('');
       window.getSelection()?.removeAllRanges();
+      document.getSelection()?.removeAllRanges();
       setSelectedVerses([]);
     }
     
-    onModeChange?.(mode);
+    // Add small delay before changing mode to ensure selection is cleared
+    setTimeout(() => {
+      onModeChange?.(mode);
+      // Clear selection again after mode change
+      window.getSelection()?.removeAllRanges();
+    }, 10);
   };
 
   const handleScroll = (source: 'left' | 'right') => {

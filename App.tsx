@@ -26,7 +26,7 @@ const App: React.FC = () => {
   const [isBottomResizing, setIsBottomResizing] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
-  const [selectionPayload, setSelectionPayload] = useState<{ text: string; id: number } | null>(null);
+  const [selectionPayload, setSelectionPayload] = useState<{ text: string; id: number; clearChat?: boolean } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -386,7 +386,7 @@ const App: React.FC = () => {
           <BibleViewer 
             notes={notes}
             onSelectionChange={handleSelectionChange}
-            onVersesSelectedForChat={(text) => setSelectionPayload({ text, id: Date.now() })}
+            onVersesSelectedForChat={(text, clearChat) => setSelectionPayload({ text, id: Date.now(), clearChat })}
             sidebarOpen={isSidebarOpen}
             showSidebarToggle={!isIPhone} // Pass iPhone detection to BibleViewer
             onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} // Allow title tap to open sidebar on iPhone
