@@ -1,6 +1,7 @@
 import { verseDataStorage } from './verseDataStorage';
 import { VerseData } from '../types/verseData';
 import { BIBLE_BOOKS } from '../constants';
+import { bibleStorage } from './bibleStorage';
 
 export interface BibleNotesExport {
   version: '1.0';
@@ -14,6 +15,21 @@ export interface BibleNotesExport {
   data: {
     [verseId: string]: VerseData;
   };
+}
+
+export interface BibleTextExport {
+  version: '1.0';
+  exportDate: string;
+  metadata: {
+    totalChapters: number;
+    translations: string[];
+  };
+  chapters: Array<{
+    bookId: string;
+    chapter: number;
+    translation: 'cuv' | 'web';
+    data: any;
+  }>;
 }
 
 export type MergeStrategy = 'replace' | 'merge_newer' | 'merge_combine' | 'skip_existing';
@@ -402,6 +418,190 @@ class ExportImportService {
     }
     
     return merged;
+  }
+
+  // Export Bible texts for offline reading
+  async exportBibleTexts(): Promise<string> {
+    // Get all stored chapters directly
+    const chapters = await bibleStorage.getAllChapters();
+    const translations = new Set<string>();
+    
+    // Track translations
+    chapters.forEach(chapter => {
+      translations.add(chapter.translation);
+    });
+    
+    const exportData: BibleTextExport = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      metadata: {
+        totalChapters: chapters.length,
+        translations: Array.from(translations)
+      },
+      chapters
+    };
+    
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  // Import Bible texts
+  async importBibleTexts(jsonString: string): Promise<{
+    success: boolean;
+    imported: number;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+    let imported = 0;
+    
+    try {
+      const importData = JSON.parse(jsonString) as BibleTextExport;
+      
+      // Validate format
+      if (importData.version !== '1.0') {
+        errors.push('Unsupported Bible text export version');
+        return { success: false, imported, errors };
+      }
+      
+      // Import each chapter
+      for (const chapter of importData.chapters) {
+        try {
+          await bibleStorage.saveChapter(
+            chapter.bookId,
+            chapter.chapter,
+            chapter.translation,
+            chapter.data
+          );
+          imported++;
+        } catch (error) {
+          errors.push(`Failed to import ${chapter.bookId} ${chapter.chapter} (${chapter.translation}): ${error}`);
+        }
+      }
+      
+      return { success: errors.length === 0, imported, errors };
+    } catch (error) {
+      errors.push(`Parse error: ${error}`);
+      return { success: false, imported, errors };
+    }
+  }
+
+  // Export both notes and Bible texts
+  async exportAll(): Promise<{
+    notes: string;
+    bibleTexts: string;
+  }> {
+    const [notes, bibleTexts] = await Promise.all([
+      this.exportToJSON(),
+      this.exportBibleTexts()
+    ]);
+    
+    return { notes, bibleTexts };
+  }
+
+  // Download all data as a single ZIP file (using a simple tar-like format)
+  async exportAndDownloadAll() {
+    try {
+      const timestamp = new Date().toISOString().split('T')[0];
+      
+      // Export notes
+      const notesContent = await this.exportToJSON();
+      const notesFilename = `bible-notes-${timestamp}.json`;
+      
+      // Export Bible texts
+      const bibleContent = await this.exportBibleTexts();
+      const bibleFilename = `bible-texts-${timestamp}.json`;
+      
+      // Create a combined JSON with both exports
+      const combinedExport = {
+        version: '2.0',
+        exportDate: new Date().toISOString(),
+        deviceId: this.deviceId,
+        notes: JSON.parse(notesContent),
+        bibleTexts: JSON.parse(bibleContent)
+      };
+      
+      const combinedContent = JSON.stringify(combinedExport, null, 2);
+      const filename = `bible-app-backup-${timestamp}.json`;
+      
+      this.downloadFile(combinedContent, filename, 'application/json');
+      return { success: true };
+    } catch (error) {
+      console.error('Export failed:', error);
+      return { success: false, error };
+    }
+  }
+
+  // Import combined backup
+  async importCombinedBackup(jsonString: string, notesStrategy: MergeStrategy = 'merge_combine'): Promise<{
+    success: boolean;
+    notesImported: number;
+    notesSkipped: number;
+    chaptersImported: number;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+    
+    try {
+      const importData = JSON.parse(jsonString);
+      
+      // Check version
+      if (importData.version === '2.0') {
+        // Combined format
+        const notesResult = await this.importFromJSON(
+          JSON.stringify(importData.notes),
+          notesStrategy
+        );
+        
+        const bibleResult = await this.importBibleTexts(
+          JSON.stringify(importData.bibleTexts)
+        );
+        
+        return {
+          success: notesResult.success && bibleResult.success,
+          notesImported: notesResult.imported,
+          notesSkipped: notesResult.skipped,
+          chaptersImported: bibleResult.imported,
+          errors: [...notesResult.errors, ...bibleResult.errors]
+        };
+      } else if (importData.version === '1.0' && importData.data) {
+        // Old notes-only format
+        const notesResult = await this.importFromJSON(jsonString, notesStrategy);
+        return {
+          success: notesResult.success,
+          notesImported: notesResult.imported,
+          notesSkipped: notesResult.skipped,
+          chaptersImported: 0,
+          errors: notesResult.errors
+        };
+      } else if (importData.version === '1.0' && importData.chapters) {
+        // Bible texts only format
+        const bibleResult = await this.importBibleTexts(jsonString);
+        return {
+          success: bibleResult.success,
+          notesImported: 0,
+          notesSkipped: 0,
+          chaptersImported: bibleResult.imported,
+          errors: bibleResult.errors
+        };
+      } else {
+        errors.push('Unrecognized backup format');
+        return {
+          success: false,
+          notesImported: 0,
+          notesSkipped: 0,
+          chaptersImported: 0,
+          errors
+        };
+      }
+    } catch (error) {
+      errors.push(`Parse error: ${error}`);
+      return {
+        success: false,
+        notesImported: 0,
+        notesSkipped: 0,
+        chaptersImported: 0,
+        errors
+      };
+    }
   }
 }
 

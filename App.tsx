@@ -7,10 +7,11 @@ import EnhancedNotebook from './components/EnhancedNotebook';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SelectionInfo } from './types';
-import { exportAllNotes, readLibraryFile } from './services/fileSystem';
+import { exportImportService } from './services/exportImportService';
 import { notesStorage } from './services/notesStorage';
 import { readingHistory } from './services/readingHistory';
 import { verseDataStorage } from './services/verseDataStorage';
+import { bibleStorage } from './services/bibleStorage';
 import { BIBLE_BOOKS } from './constants';
 import { Toast } from './components/Toast';
 
@@ -204,46 +205,83 @@ const App: React.FC = () => {
     }
   }, [notes]);
 
-  const handleBackupAll = () => {
-    if (Object.keys(notes).length === 0) {
-      setToast({ message: "当前没有可备份的笔记。 No notes to export.", type: 'info' });
-      return;
-    }
+  const handleBackupAll = async () => {
     try {
-      exportAllNotes(notes);
-      const noteCount = Object.keys(notes).length;
-      setToast({ message: `成功导出 ${noteCount} 条笔记！ Successfully exported ${noteCount} notes!`, type: 'success' });
+      setToast({ message: "正在导出数据... Exporting data...", type: 'info' });
+      
+      // Export all data (notes + Bible texts)
+      const result = await exportImportService.exportAndDownloadAll();
+      
+      if (result.success) {
+        // Get counts for feedback
+        const allVerseData = await verseDataStorage.getAllData();
+        const noteCount = allVerseData.filter(v => v.personalNote).length;
+        const researchCount = allVerseData.reduce((acc, v) => acc + v.aiResearch.length, 0);
+        const offlineChapters = await bibleStorage.getAllOfflineChapters();
+        const chapterCount = offlineChapters.size;
+        
+        let message = `成功导出！Successfully exported!\n`;
+        if (noteCount > 0) message += `${noteCount} 条笔记 notes, `;
+        if (researchCount > 0) message += `${researchCount} 条研究 research, `;
+        if (chapterCount > 0) message += `${chapterCount} 章圣经 Bible chapters`;
+        
+        setToast({ message: message.trim().replace(/, $/, ''), type: 'success' });
+      } else {
+        throw new Error('Export failed');
+      }
     } catch (error) {
-      console.error('Failed to export notes:', error);
-      setToast({ message: "导出笔记失败，请重试。 Failed to export notes.", type: 'error' });
+      console.error('Failed to export:', error);
+      setToast({ message: "导出失败，请重试。 Failed to export.", type: 'error' });
     }
   };
 
   const handleClearAll = async () => {
-    if (Object.keys(notes).length === 0) {
-      setToast({ message: "当前没有笔记可以清除。 No notes to clear.", type: 'info' });
-      return;
-    }
-    
-    const noteCount = Object.keys(notes).length;
-    if (confirm(`确定要清除所有 ${noteCount} 条笔记吗？此操作无法撤销。 Delete all ${noteCount} notes? This cannot be undone.`)) {
-      try {
+    try {
+      // Get counts of all data
+      const allVerseData = await verseDataStorage.getAllData();
+      const noteCount = allVerseData.filter(v => v.personalNote).length;
+      const researchCount = allVerseData.reduce((acc, v) => acc + v.aiResearch.length, 0);
+      const oldNotesCount = Object.keys(notes).length;
+      
+      const totalCount = noteCount + researchCount + oldNotesCount;
+      
+      if (totalCount === 0) {
+        setToast({ message: "当前没有数据可以清除。 No data to clear.", type: 'info' });
+        return;
+      }
+      
+      // Build confirmation message
+      let confirmMsg = `确定要清除所有数据吗？Are you sure you want to delete all data?\n\n`;
+      if (noteCount > 0) confirmMsg += `${noteCount} 条笔记 notes\n`;
+      if (researchCount > 0) confirmMsg += `${researchCount} 条AI研究 AI research\n`;
+      if (oldNotesCount > 0) confirmMsg += `${oldNotesCount} 条旧笔记 old notes\n`;
+      confirmMsg += '\n此操作无法撤销！This cannot be undone!';
+      
+      if (confirm(confirmMsg)) {
         // Show loading state
-        setToast({ message: "正在清除笔记... Clearing notes...", type: 'info' });
+        setToast({ message: "正在清除数据... Clearing data...", type: 'info' });
         
-        // Clear notes from both storage locations
-        await notesStorage.clearAllNotes();
-        await verseDataStorage.clearAllPersonalNotes();
+        // Clear all data from all storage locations
+        await Promise.all([
+          notesStorage.clearAllNotes(),
+          verseDataStorage.clearAllPersonalNotes(),
+          verseDataStorage.clearAllAIResearch()
+        ]);
         setNotes({});
         
         // Show success after clearing
         setTimeout(() => {
-          setToast({ message: `成功清除 ${noteCount} 条笔记！ Successfully cleared ${noteCount} notes!`, type: 'success' });
+          let successMsg = `成功清除！Successfully cleared!\n`;
+          if (noteCount > 0) successMsg += `${noteCount} 条笔记 notes, `;
+          if (researchCount > 0) successMsg += `${researchCount} 条研究 research, `;
+          if (oldNotesCount > 0) successMsg += `${oldNotesCount} 条旧笔记 old notes`;
+          
+          setToast({ message: successMsg.trim().replace(/, $/, ''), type: 'success' });
         }, 100);
-      } catch (error) {
-        console.error('Failed to clear notes from IndexedDB:', error);
-        setToast({ message: "清除笔记时出错，请重试。 Failed to clear notes.", type: 'error' });
       }
+    } catch (error) {
+      console.error('Failed to clear data:', error);
+      setToast({ message: "清除数据时出错，请重试。 Failed to clear data.", type: 'error' });
     }
   };
 
@@ -257,14 +295,38 @@ const App: React.FC = () => {
 
     if (confirm("恢复备份将合并您的笔记。是否继续？ Restore backup will merge your notes. Continue?")) {
       try {
-        setToast({ message: "正在恢复笔记... Restoring notes...", type: 'info' });
-        const importedNotes = await readLibraryFile(file);
-        // Import to IndexedDB and update state
-        await notesStorage.importNotes(importedNotes);
-        const allNotes = await notesStorage.getAllNotes();
-        setNotes(allNotes);
-        const noteCount = Object.keys(importedNotes).length;
-        setToast({ message: `成功恢复 ${noteCount} 条笔记！ Successfully restored ${noteCount} notes!`, type: 'success' });
+        setToast({ message: "正在读取备份... Reading backup...", type: 'info' });
+        
+        // Read file content
+        const content = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+        
+        // Import using the new service
+        const result = await exportImportService.importCombinedBackup(content, 'merge_combine');
+        
+        if (result.success || result.notesImported > 0 || result.chaptersImported > 0) {
+          // Refresh notes display
+          const allNotes = await notesStorage.getAllNotes();
+          setNotes(allNotes);
+          
+          // Build success message
+          let message = `恢复成功！Successfully restored!\n`;
+          if (result.notesImported > 0) message += `${result.notesImported} 条笔记 notes, `;
+          if (result.notesSkipped > 0) message += `${result.notesSkipped} 跳过 skipped, `;
+          if (result.chaptersImported > 0) message += `${result.chaptersImported} 章圣经 Bible chapters`;
+          
+          setToast({ message: message.trim().replace(/, $/, ''), type: 'success' });
+          
+          if (result.errors.length > 0) {
+            console.warn('Import warnings:', result.errors);
+          }
+        } else {
+          throw new Error(result.errors.join('; ') || 'Import failed');
+        }
       } catch (err: any) {
         setToast({ message: `恢复失败: ${err.message} Failed to restore: ${err.message}`, type: 'error' });
       }
@@ -418,7 +480,7 @@ const App: React.FC = () => {
         type="file" 
         ref={libraryInputRef} 
         onChange={handleLibraryImport} 
-        accept=".bible-library" 
+        accept=".json,.bible-library" 
         className="hidden" 
       />
       

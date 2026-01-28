@@ -193,6 +193,33 @@ class BibleStorageService {
     }
     return { used: 0, quota: 0 };
   }
+
+  // Get all stored chapters for export
+  async getAllChapters(): Promise<Array<{
+    bookId: string;
+    chapter: number;
+    translation: 'cuv' | 'web';
+    data: any;
+  }>> {
+    const db = await this.ensureDB();
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    
+    return new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const results = request.result || [];
+        const chapters = results.map(item => ({
+          bookId: item.bookId,
+          chapter: item.chapter,
+          translation: item.translation,
+          data: item.data
+        }));
+        resolve(chapters);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
 }
 
 export const bibleStorage = new BibleStorageService();

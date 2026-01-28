@@ -366,9 +366,37 @@ class VerseDataStorage {
         }
       }
       
-      await tx.complete;
+      await tx.oncomplete;
     } catch (error) {
       console.error('Failed to clear all personal notes:', error);
+      throw error;
+    }
+  }
+
+  // Clear all AI research
+  async clearAllAIResearch(): Promise<void> {
+    const db = await this.ensureDB();
+    
+    try {
+      const tx = db.transaction('verseData', 'readwrite');
+      const store = tx.objectStore('verseData');
+      const allData = await store.getAll();
+      
+      for (const data of allData) {
+        if (data.aiResearch && data.aiResearch.length > 0) {
+          data.aiResearch = [];
+          // If no personal note either, delete the entire entry
+          if (!data.personalNote) {
+            await store.delete(data.id);
+          } else {
+            await store.put(data);
+          }
+        }
+      }
+      
+      await tx.oncomplete;
+    } catch (error) {
+      console.error('Failed to clear all AI research:', error);
       throw error;
     }
   }
