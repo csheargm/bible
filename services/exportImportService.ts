@@ -422,26 +422,43 @@ class ExportImportService {
 
   // Export Bible texts for offline reading
   async exportBibleTexts(): Promise<string> {
-    // Get all stored chapters directly
-    const chapters = await bibleStorage.getAllChapters();
-    const translations = new Set<string>();
-    
-    // Track translations
-    chapters.forEach(chapter => {
-      translations.add(chapter.translation);
-    });
-    
-    const exportData: BibleTextExport = {
-      version: '1.0',
-      exportDate: new Date().toISOString(),
-      metadata: {
-        totalChapters: chapters.length,
-        translations: Array.from(translations)
-      },
-      chapters
-    };
-    
-    return JSON.stringify(exportData, null, 2);
+    try {
+      console.log('exportBibleTexts: Getting all chapters...');
+      // Get all stored chapters directly
+      const chapters = await bibleStorage.getAllChapters();
+      console.log('exportBibleTexts: Got', chapters.length, 'chapters');
+      
+      const translations = new Set<string>();
+      
+      // Track translations
+      chapters.forEach(chapter => {
+        translations.add(chapter.translation);
+      });
+      
+      const exportData: BibleTextExport = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        metadata: {
+          totalChapters: chapters.length,
+          translations: Array.from(translations)
+        },
+        chapters
+      };
+      
+      return JSON.stringify(exportData, null, 2);
+    } catch (error) {
+      console.error('exportBibleTexts failed:', error);
+      // Return empty export on error
+      return JSON.stringify({
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        metadata: {
+          totalChapters: 0,
+          translations: []
+        },
+        chapters: []
+      }, null, 2);
+    }
   }
 
   // Import Bible texts
@@ -500,15 +517,18 @@ class ExportImportService {
   // Download all data as a single ZIP file (using a simple tar-like format)
   async exportAndDownloadAll() {
     try {
+      console.log('exportAndDownloadAll: Starting export');
       const timestamp = new Date().toISOString().split('T')[0];
       
       // Export notes
+      console.log('exportAndDownloadAll: Exporting notes...');
       const notesContent = await this.exportToJSON();
-      const notesFilename = `bible-notes-${timestamp}.json`;
+      console.log('exportAndDownloadAll: Notes exported, length:', notesContent.length);
       
       // Export Bible texts
+      console.log('exportAndDownloadAll: Exporting Bible texts...');
       const bibleContent = await this.exportBibleTexts();
-      const bibleFilename = `bible-texts-${timestamp}.json`;
+      console.log('exportAndDownloadAll: Bible texts exported, length:', bibleContent.length);
       
       // Create a combined JSON with both exports
       const combinedExport = {
@@ -519,14 +539,18 @@ class ExportImportService {
         bibleTexts: JSON.parse(bibleContent)
       };
       
+      console.log('exportAndDownloadAll: Creating combined content...');
       const combinedContent = JSON.stringify(combinedExport, null, 2);
       const filename = `bible-app-backup-${timestamp}.json`;
       
+      console.log('exportAndDownloadAll: Downloading file:', filename);
       this.downloadFile(combinedContent, filename, 'application/json');
+      console.log('exportAndDownloadAll: Download initiated successfully');
       return { success: true };
-    } catch (error) {
-      console.error('Export failed:', error);
-      return { success: false, error };
+    } catch (error: any) {
+      console.error('Export failed with error:', error.message || error);
+      console.error('Stack trace:', error.stack);
+      return { success: false, error: error.message || String(error) };
     }
   }
 

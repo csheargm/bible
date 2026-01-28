@@ -207,31 +207,51 @@ const App: React.FC = () => {
 
   const handleBackupAll = async () => {
     try {
+      console.log('Starting export...');
       setToast({ message: "正在导出数据... Exporting data...", type: 'info' });
       
       // Export all data (notes + Bible texts)
       const result = await exportImportService.exportAndDownloadAll();
+      console.log('Export result:', result);
       
       if (result.success) {
-        // Get counts for feedback
-        const allVerseData = await verseDataStorage.getAllData();
-        const noteCount = allVerseData.filter(v => v.personalNote).length;
-        const researchCount = allVerseData.reduce((acc, v) => acc + v.aiResearch.length, 0);
-        const offlineChapters = await bibleStorage.getAllOfflineChapters();
-        const chapterCount = offlineChapters.size;
+        // Get counts for feedback - with error handling
+        let noteCount = 0;
+        let researchCount = 0;
+        let chapterCount = 0;
+        
+        try {
+          const allVerseData = await verseDataStorage.getAllData();
+          noteCount = allVerseData.filter(v => v.personalNote).length;
+          researchCount = allVerseData.reduce((acc, v) => acc + v.aiResearch.length, 0);
+        } catch (e) {
+          console.warn('Could not get verse data counts:', e);
+        }
+        
+        try {
+          const offlineChapters = await bibleStorage.getAllOfflineChapters();
+          chapterCount = offlineChapters.size;
+        } catch (e) {
+          console.warn('Could not get chapter count:', e);
+        }
         
         let message = `成功导出！Successfully exported!\n`;
         if (noteCount > 0) message += `${noteCount} 条笔记 notes, `;
         if (researchCount > 0) message += `${researchCount} 条研究 research, `;
         if (chapterCount > 0) message += `${chapterCount} 章圣经 Bible chapters`;
         
+        // If no counts available, show simple success
+        if (noteCount === 0 && researchCount === 0 && chapterCount === 0) {
+          message = '成功导出数据！Successfully exported data!';
+        }
+        
         setToast({ message: message.trim().replace(/, $/, ''), type: 'success' });
       } else {
-        throw new Error('Export failed');
+        throw new Error(result.error || 'Export failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to export:', error);
-      setToast({ message: "导出失败，请重试。 Failed to export.", type: 'error' });
+      setToast({ message: `导出失败: ${error.message || error} Failed to export.`, type: 'error' });
     }
   };
 
