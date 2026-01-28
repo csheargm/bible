@@ -14,6 +14,7 @@ import { verseDataStorage } from './services/verseDataStorage';
 import { bibleStorage } from './services/bibleStorage';
 import { BIBLE_BOOKS } from './constants';
 import { Toast } from './components/Toast';
+import { useDataStats } from './hooks/useDataStats';
 
 const App: React.FC = () => {
   // Device detection for responsive layout
@@ -49,6 +50,7 @@ const App: React.FC = () => {
   const [downloadStatus, setDownloadStatus] = useState<string>('');
   const [downloadTimeRemaining, setDownloadTimeRemaining] = useState<string>('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [dataUpdateTrigger, setDataUpdateTrigger] = useState(0);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
@@ -176,6 +178,7 @@ const App: React.FC = () => {
         if (!content || content.trim() === "") {
           // Delete note from IndexedDB
           await notesStorage.deleteNote(id);
+          setDataUpdateTrigger(prev => prev + 1);
           setNotes(prev => {
             const updated = { ...prev };
             delete updated[id];
@@ -195,6 +198,7 @@ const App: React.FC = () => {
           // Save note to IndexedDB
           await notesStorage.saveNote(id, content);
           setNotes(prev => ({ ...prev, [id]: content }));
+          setDataUpdateTrigger(prev => prev + 1);
           
           // Update reading history to indicate this chapter has notes
           await readingHistory.updateChapterStatus(bookId, chapter, true, undefined);
@@ -289,6 +293,9 @@ const App: React.FC = () => {
         ]);
         setNotes({});
         
+        // Trigger stats update
+        setDataUpdateTrigger(prev => prev + 1);
+        
         // Show success after clearing
         setTimeout(() => {
           let successMsg = `成功清除！Successfully cleared!\n`;
@@ -332,6 +339,9 @@ const App: React.FC = () => {
           // Refresh notes display
           const allNotes = await notesStorage.getAllNotes();
           setNotes(allNotes);
+          
+          // Trigger stats update
+          setDataUpdateTrigger(prev => prev + 1);
           
           // Build success message
           let message = `恢复成功！Successfully restored!\n`;
@@ -527,6 +537,7 @@ const App: React.FC = () => {
         onDownloadBible={downloadBible}
         onDownloadChapter={downloadChapter}
         onDownloadBook={downloadBook}
+        dataUpdateTrigger={dataUpdateTrigger}
         downloadProgress={downloadProgress}
         isDownloading={isDownloading}
         downloadStatus={downloadStatus}
@@ -776,7 +787,10 @@ const App: React.FC = () => {
                incomingText={selectionPayload}
                currentBookId={currentBibleContext?.bookId}
                currentChapter={currentBibleContext?.chapter}
-               onResearchSaved={() => setResearchUpdateTrigger(prev => prev + 1)}
+               onResearchSaved={() => {
+                 setResearchUpdateTrigger(prev => prev + 1);
+                 setDataUpdateTrigger(prev => prev + 1);
+               }}
              />
           </div>
           

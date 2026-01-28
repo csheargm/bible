@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDataStats } from '../hooks/useDataStats';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface SidebarProps {
   isDownloading?: boolean;
   downloadStatus?: string;
   downloadTimeRemaining?: string;
+  dataUpdateTrigger?: number;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -33,8 +35,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   isDownloading = false,
   downloadStatus = '',
   downloadTimeRemaining = '',
-  showToggle = true
+  showToggle = true,
+  dataUpdateTrigger = 0
 }) => {
+  const { stats, loading } = useDataStats(dataUpdateTrigger);
   return (
     <>
       {/* Toggle Button - Hidden on iPhone */}
@@ -104,17 +108,45 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="h-px bg-slate-200 my-4"></div>
 
+          {/* Data Summary */}
+          <div className="mx-4 p-3 bg-slate-50 rounded-lg">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+              数据统计 Data Summary
+            </h3>
+            {loading ? (
+              <div className="text-xs text-slate-400">加载中 Loading...</div>
+            ) : (
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-600">📝 个人笔记 Notes:</span>
+                  <span className="font-medium text-slate-700">{stats.personalNotes}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">🔍 AI研究 Research:</span>
+                  <span className="font-medium text-slate-700">{stats.aiResearch}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600">📖 缓存章节 Chapters:</span>
+                  <span className="font-medium text-slate-700">{stats.cachedChapters}</span>
+                </div>
+                {stats.totalSize && (
+                  <div className="flex justify-between pt-1 border-t border-slate-200">
+                    <span className="text-slate-600">💾 存储空间 Storage:</span>
+                    <span className="font-medium text-slate-700">
+                      {(stats.totalSize / (1024 * 1024)).toFixed(1)} MB
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Notes Management */}
           <div className="space-y-2">
-            <div className="px-4 py-2">
+            <div className="px-4 py-2 pt-4">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 笔记管理 Notes Management
               </h3>
-              {notesCount > 0 && (
-                <p className="text-xs text-slate-500 mt-1">
-                  {notesCount} 条笔记
-                </p>
-              )}
             </div>
 
             <button 
