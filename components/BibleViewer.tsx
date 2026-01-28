@@ -1302,10 +1302,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     // Only process horizontal swipes
     if (swipeDirection === 'horizontal') {
       setIsSwiping(true);
-      // Update swipe offset for visual feedback - only horizontal
-      const maxOffset = window.innerWidth * 0.4;
-      const clampedDiff = Math.max(-maxOffset, Math.min(maxOffset, horizontalDiff));
-      setSwipeOffset(clampedDiff);
+      // Update swipe offset for visual feedback
+      setSwipeOffset(horizontalDiff);
       setFlipDirection(horizontalDiff > 0 ? 'right' : 'left');
       
       // Prevent vertical scrolling while swiping horizontally
@@ -1325,29 +1323,32 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     }
     const diff = e.changedTouches[0].clientX - touchStartX;
     
-    if (Math.abs(diff) > 30) {  // Lower threshold for easier page flipping
-      // Complete the page flip animation
+    // Determine if we should complete the flip based on distance
+    const shouldFlip = Math.abs(diff) > window.innerWidth * 0.25; // 25% of screen width
+    
+    if (shouldFlip) {
+      // Animate to completion
       setIsPageFlipping(true);
       const targetOffset = diff > 0 ? window.innerWidth : -window.innerWidth;
       setSwipeOffset(targetOffset);
       
-      // Wait for animation to complete, then navigate
+      // Navigate after animation
       setTimeout(() => {
         navigateChapter(diff > 0 ? 'prev' : 'next');
         setSwipeOffset(0);
         setIsPageFlipping(false);
         setFlipDirection(null);
         setIsSwiping(false);
-      }, 400); // Match the CSS transition duration
+      }, 300);
     } else {
-      // Snap back if swipe wasn't far enough
+      // Snap back
       setIsPageFlipping(true);
       setSwipeOffset(0);
       setTimeout(() => {
         setIsPageFlipping(false);
         setFlipDirection(null);
         setIsSwiping(false);
-      }, 400);
+      }, 300);
     }
     
     setTouchStartX(null);
@@ -1712,32 +1713,19 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{
-          perspective: isReadingMode && isIOS ? '1000px' : undefined,
-          backgroundColor: isPageFlipping && isReadingMode && isIOS ? '#FDF8F0' : 'transparent'
-        }}
       >
-        {/* Show next/previous page during flip animation */}
-        {isReadingMode && isIOS && (isSwiping || isPageFlipping) && flipDirection && (
+        {/* Show next/previous page during swipe */}
+        {isReadingMode && isIOS && isSwiping && flipDirection && (
           <div 
             className="absolute inset-0 overflow-y-auto p-4 md:p-6 space-y-0.5 font-serif-sc"
             style={{
               transform: flipDirection === 'left' 
-                ? `translateX(${window.innerWidth + swipeOffset}px) rotateY(${-swipeOffset * 0.03}deg)`
-                : `translateX(${-window.innerWidth + swipeOffset}px) rotateY(${-swipeOffset * 0.03}deg)`,
-              transition: isPageFlipping ? 'all 0.4s ease-out' : 'none',
-              transformOrigin: flipDirection === 'left' ? 'left center' : 'right center',
+                ? `translateX(${window.innerWidth + swipeOffset}px)`
+                : `translateX(${-window.innerWidth + swipeOffset}px)`,
+              transition: isPageFlipping ? 'transform 0.3s ease-out' : 'none',
               zIndex: 5,
               backgroundColor: '#FDF8F0',
-              backgroundImage: `
-                linear-gradient(180deg, #FFFEF9 0%, #FDF6E8 50%, #FAF3E5 100%),
-                radial-gradient(ellipse at center, rgba(252, 243, 223, 0.3) 0%, transparent 60%)
-              `,
-              boxShadow: `
-                ${flipDirection === 'left' ? -8 : 8}px 0 20px rgba(0,0,0,0.25),
-                inset 0 0 50px rgba(245, 225, 185, 0.2),
-                inset 1px 1px 3px rgba(255, 255, 255, 0.5)
-              `
+              boxShadow: '0 0 20px rgba(0,0,0,0.1)'
             }}
           >
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">和合本 CUV</div>
@@ -1828,12 +1816,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                 pointerEvents: 'none'
               }
             }),
-            // Page flip animation for iOS in reading mode - horizontal only
+            // Simple page slide animation for iOS
             ...(isReadingMode && isIOS && {
-              transform: `translateX(${swipeOffset}px) rotateY(${swipeOffset * 0.03}deg)`,
-              transition: isPageFlipping ? 'transform 0.4s ease-out, box-shadow 0.4s ease-out' : 'none',
-              transformOrigin: swipeOffset > 0 ? 'right center' : 'left center',
-              boxShadow: isSwiping || isPageFlipping ? `${-swipeOffset * 0.02}px 0 20px rgba(0,0,0,0.3)` : 'inset 0 0 40px rgba(249, 235, 195, 0.2)',
+              transform: `translateX(${swipeOffset}px)`,
+              transition: isPageFlipping ? 'transform 0.3s ease-out' : 'none',
               willChange: isSwiping ? 'transform' : 'auto'
             })
           }}
