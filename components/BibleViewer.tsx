@@ -77,6 +77,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   const [downloadTimeRemaining, setDownloadTimeRemaining] = useState<string>('');
   const [isOffline, setIsOffline] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState<'horizontal' | 'vertical' | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isPageFlipping, setIsPageFlipping] = useState(false);
@@ -1241,18 +1243,22 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
       // Allow swiping from anywhere on the screen
       // Store the starting position for swipe detection
       setTouchStartX(e.touches[0].clientX);
+      setTouchStartY(e.touches[0].clientY);
+      setSwipeDirection(null); // Reset swipe direction detection
       setIsSwiping(false);
       setSwipeOffset(0);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX === null || !isReadingMode) return;
+    if (touchStartX === null || touchStartY === null || !isReadingMode) return;
     
     // Stop if text is being selected
     const selection = window.getSelection();
     if (selection && selection.toString().length > 0) {
       setTouchStartX(null);
+      setTouchStartY(null);
+      setSwipeDirection(null);
       setIsSwiping(false);
       setSwipeOffset(0);
       return;
@@ -1261,15 +1267,40 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     // Stop if verses are selected
     if (selectedVerses.length > 0) {
       setTouchStartX(null);
+      setTouchStartY(null);
+      setSwipeDirection(null);
       setIsSwiping(false);
       setSwipeOffset(0);
       return;
     }
     
-    // Only track horizontal movement, ignore vertical
     const horizontalDiff = e.touches[0].clientX - touchStartX;
+    const verticalDiff = e.touches[0].clientY - touchStartY;
     
-    if (Math.abs(horizontalDiff) > 5) {  // Lower threshold for more responsive swiping
+    // Determine swipe direction on first significant movement
+    if (swipeDirection === null) {
+      const absHorizontal = Math.abs(horizontalDiff);
+      const absVertical = Math.abs(verticalDiff);
+      
+      // Need minimum movement to determine direction
+      if (absHorizontal > 10 || absVertical > 10) {
+        // Check if swipe is more horizontal than vertical (within 30-degree angle)
+        if (absHorizontal > absVertical * 1.5) {
+          setSwipeDirection('horizontal');
+        } else {
+          setSwipeDirection('vertical');
+          // Cancel any page flip for vertical swipes
+          setTouchStartX(null);
+          setTouchStartY(null);
+          setIsSwiping(false);
+          setSwipeOffset(0);
+          return;
+        }
+      }
+    }
+    
+    // Only process horizontal swipes
+    if (swipeDirection === 'horizontal') {
       setIsSwiping(true);
       // Update swipe offset for visual feedback - only horizontal
       const maxOffset = window.innerWidth * 0.4;
@@ -1283,7 +1314,15 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null || !isSwiping || !isReadingMode) return;
+    if (touchStartX === null || !isSwiping || !isReadingMode || swipeDirection !== 'horizontal') {
+      // Reset all states
+      setTouchStartX(null);
+      setTouchStartY(null);
+      setSwipeDirection(null);
+      setIsSwiping(false);
+      setSwipeOffset(0);
+      return;
+    }
     const diff = e.changedTouches[0].clientX - touchStartX;
     
     if (Math.abs(diff) > 30) {  // Lower threshold for easier page flipping
@@ -1312,6 +1351,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     }
     
     setTouchStartX(null);
+    setTouchStartY(null);
+    setSwipeDirection(null);
   };
 
   const canNavigatePrev = selectedChapter > 1 || BIBLE_BOOKS.findIndex(b => b.id === selectedBook.id) > 0;
