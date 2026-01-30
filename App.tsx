@@ -623,7 +623,7 @@ const App: React.FC = () => {
           {/* Arrow buttons for quick positioning */}
           <div 
             className="relative flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-xl border-2 border-slate-400 hover:border-blue-400 transition-colors" 
-            style={{ height: isIPhone ? '28px' : '20px', zIndex: 60 }}
+            style={{ height: isIPhone ? '36px' : '20px', zIndex: 60 }}
           >
             {/* Up arrow - go to 50% when at bottom (100%), otherwise minimize/restore */}
             <button
@@ -646,9 +646,9 @@ const App: React.FC = () => {
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title={splitOffset >= 100 ? "Split view (50/50)" : splitOffset >= 50 ? "Minimize Bible view" : "Show chat and notes (⅔ screen)"}
-              style={{ height: isIPhone ? '20px' : '14px', width: isIPhone ? '20px' : '14px' }}
+              style={{ height: isIPhone ? '28px' : '14px', width: isIPhone ? '28px' : '14px' }}
             >
-              <svg className={`${isIPhone ? 'w-4 h-4' : 'w-3 h-3'} text-slate-500 group-hover:text-slate-700 transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={`${isIPhone ? 'w-6 h-6' : 'w-3 h-3'} text-slate-500 group-hover:text-slate-700 transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
               </svg>
             </button>
@@ -659,7 +659,7 @@ const App: React.FC = () => {
               onTouchStart={startResizing}
               onPointerDown={startResizing}
               className="flex flex-col gap-0.5 px-1 justify-center cursor-row-resize" 
-              style={{ height: isIPhone ? '20px' : '14px' }}
+              style={{ height: isIPhone ? '28px' : '14px' }}
             >
               <div className="w-4 h-0.5 bg-slate-300 pointer-events-none"></div>
               <div className="w-4 h-0.5 bg-slate-300 pointer-events-none"></div>
@@ -683,9 +683,9 @@ const App: React.FC = () => {
               }}
               className="p-px hover:bg-slate-200 rounded transition-colors flex items-center justify-center group"
               title={splitOffset <= 0 ? "Split view (50/50)" : "Maximize Bible reading"}
-              style={{ height: isIPhone ? '20px' : '14px', width: isIPhone ? '20px' : '14px' }}
+              style={{ height: isIPhone ? '28px' : '14px', width: isIPhone ? '28px' : '14px' }}
             >
-              <svg className={`${isIPhone ? 'w-4 h-4' : 'w-3 h-3'} text-slate-500 group-hover:text-slate-700 transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={`${isIPhone ? 'w-6 h-6' : 'w-3 h-3'} text-slate-500 group-hover:text-slate-700 transition-colors`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
