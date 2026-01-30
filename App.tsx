@@ -527,7 +527,10 @@ const App: React.FC = () => {
         onClear={handleClearAll}
         onVoiceOpen={() => setIsVoiceOpen(true)}
         onViewNotes={() => setShowNotesList(true)}
-        onSplitView={() => setSplitOffset(50)}
+        onSplitView={() => {
+          setSplitOffset(50);
+          setIsSidebarOpen(false);
+        }}
         notesCount={Object.keys(notes).length}
         onDownloadBible={downloadBible}
         onDownloadChapter={downloadChapter}
