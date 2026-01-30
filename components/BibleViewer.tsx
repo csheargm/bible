@@ -24,6 +24,7 @@ interface BibleViewerProps {
   initialBookId?: string;
   initialChapter?: number;
   navigateTo?: { bookId: string; chapter: number; verses?: number[] } | null;
+  onLayoutChange?: (splitOffset: number, bottomSplitOffset: number) => void;
 }
 
 
@@ -41,7 +42,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   onDownloadFunctionsReady,
   initialBookId,
   initialChapter,
-  navigateTo
+  navigateTo,
+  onLayoutChange
 }) => {
   const [selectedBook, setSelectedBook] = useState<Book>(() => {
     if (initialBookId) {
@@ -122,6 +124,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     };
   } | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // iOS two-step text selection state (isolated)
+  const [iosTextSelectionReady, setIosTextSelectionReady] = useState(false);
   
   // Better iOS detection that works for modern iPads
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || 
@@ -899,6 +904,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     e.stopPropagation();
     e.preventDefault();
     
+    // Disable verse selection on iOS to allow text selection only
+    if (isIOS) return;
+    
     // Don't respond to verse clicks if there's already text selection
     // (text selection takes priority)
     
@@ -929,12 +937,37 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
+    // Skip on iOS - use touch events instead for two-step selection
+    if (isIOS) return;
+    
     const selection = window.getSelection();
     const text = selection?.toString().trim();
     if (text && text.length > 0) {
       // Don't notify selection here - let handleTextSelection determine the correct verse
       // Only show the context menu
       handleTextSelection();
+    }
+  };
+
+  // iOS-only touch handler for two-step text selection
+  const handleIOSTouchEnd = (e: React.TouchEvent) => {
+    if (!isIOS) return;
+    
+    const selection = window.getSelection();
+    const text = selection?.toString().trim();
+    
+    if (text && text.length > 0) {
+      if (!iosTextSelectionReady) {
+        // First selection - just mark as ready, don't show context menu
+        setIosTextSelectionReady(true);
+      } else {
+        // Second tap on selected text - show context menu
+        handleTextSelection();
+        setIosTextSelectionReady(false);
+      }
+    } else {
+      // No text selected - reset state
+      setIosTextSelectionReady(false);
     }
   };
 
@@ -1085,27 +1118,24 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
         }
       }
       
-      // Automatically trigger research with formatted text
       // Clear any existing verse selection first (text selection takes priority)
       setSelectedVerses([]);
       
-      // If we have verse info, highlight just that verse
-      if (verseInfo) {
+      // If we have verse info and not on iOS, highlight just that verse
+      // On iOS, avoid verse selection to prevent interference with page flipping
+      if (verseInfo && !isIOS) {
         setSelectedVerses([verseInfo.verseNum]);
       }
       
-      const formattedText = verseInfo 
-        ? `解读："${selectedText}" in ${verseInfo.bookName} ${verseInfo.chapter}:${verseInfo.verseNum}\n\n完整经文：${verseInfo.fullVerseText}`
-        : `解读："${selectedText}"`;
-      
-      // Send to AI
-      onVersesSelectedForChat(formattedText, false);
-      
-      // Don't clear selection automatically - let user keep it or clear it manually
-      // This allows users to review their selection before it disappears
-      
-      // Don't show context menu
-      setContextMenu(null);
+      // Show context menu with the selected text and verse info
+      setContextMenu({
+        position: {
+          x: rect.left + window.scrollX,
+          y: rect.bottom + window.scrollY
+        },
+        selectedText: selectedText,
+        verseInfo: verseInfo
+      });
     } else {
       setContextMenu(null);
     }
@@ -1143,6 +1173,11 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
         
         // Send to AI chat - don't clear previous chat
         onVersesSelectedForChat(formattedText, false);
+        
+        // Adjust layout: horizontal divider to 50%, research view to 100%
+        if (onLayoutChange) {
+          onLayoutChange(50, 100);
+        }
         
         break;
       case 'note':
@@ -1359,6 +1394,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
       ref={containerRef} 
       onClick={handleEmptySpaceClick}
       onMouseUp={handleMouseUp}
+      onTouchEnd={isIOS ? handleIOSTouchEnd : undefined}
       style={{
         userSelect: isTransitioning ? 'none' : 'auto',
         WebkitUserSelect: isTransitioning ? 'none' : 'auto'
@@ -1621,6 +1657,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                   notePreview={verseData[`${selectedBook.id}:${selectedChapter}:${v.verse}`]?.notePreview}
                   researchCount={verseData[`${selectedBook.id}:${selectedChapter}:${v.verse}`]?.researchCount || 0}
                   onClick={() => {
+                    // Disable verse selection on iOS
+                    if (isIOS) return;
+                    
                     const noteId = `${selectedBook.id}:${selectedChapter}:${v.verse}`;
                     
                     // Select this verse first
@@ -1687,7 +1726,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
               <div 
                 key={`left-${v.verse}`}
                 data-verse={v.verse}
-                onClick={(e) => handleVerseClick(v.verse, e)}
+                onClick={isIOS ? undefined : (e) => handleVerseClick(v.verse, e)}
                 className={`p-1 rounded-lg transition-all border relative ${
                   selectedVerses.includes(v.verse) ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 
                   'border-transparent hover:bg-slate-50'
@@ -1708,6 +1747,9 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                   notePreview={verseData[`${selectedBook.id}:${selectedChapter}:${v.verse}`]?.notePreview}
                   researchCount={verseData[`${selectedBook.id}:${selectedChapter}:${v.verse}`]?.researchCount || 0}
                   onClick={() => {
+                    // Disable verse selection on iOS
+                    if (isIOS) return;
+                    
                     const noteId = `${selectedBook.id}:${selectedChapter}:${v.verse}`;
                     
                     // Select this verse first
@@ -1851,7 +1893,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
               <div 
                 key={`right-${v.verse}`}
                 data-verse={v.verse}
-                onClick={(e) => handleVerseClick(v.verse, e)}
+                onClick={isIOS ? undefined : (e) => handleVerseClick(v.verse, e)}
                 className={`p-1 rounded-lg transition-all border ${
                   selectedVerses.includes(v.verse) ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 
                   'border-transparent hover:bg-slate-50'

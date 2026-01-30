@@ -368,10 +368,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText, currentBook
     setResearchToSave(null);
   };
 
-  const resize = useCallback((e: MouseEvent) => {
+  const resize = useCallback((e: MouseEvent | TouchEvent) => {
     if (isResizing && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+      const clientX = 'clientX' in e ? e.clientX : e.touches[0]?.clientX || 0;
+      const percentage = ((clientX - rect.left) / rect.width) * 100;
       if (percentage >= 0 && percentage <= 100) setVSplitOffset(percentage);
     }
   }, [isResizing]);
@@ -380,13 +381,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText, currentBook
     if (isResizing) {
       window.addEventListener('mousemove', resize);
       window.addEventListener('mouseup', stopResizing);
+      window.addEventListener('touchmove', resize);
+      window.addEventListener('touchend', stopResizing);
     } else {
       window.removeEventListener('mousemove', resize);
       window.removeEventListener('mouseup', stopResizing);
+      window.removeEventListener('touchmove', resize);
+      window.removeEventListener('touchend', stopResizing);
     }
     return () => {
       window.removeEventListener('mousemove', resize);
       window.removeEventListener('mouseup', stopResizing);
+      window.removeEventListener('touchmove', resize);
+      window.removeEventListener('touchend', stopResizing);
     };
   }, [isResizing, resize, stopResizing]);
 
@@ -451,6 +458,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText, currentBook
           
           <div 
             onMouseDown={startResizing}
+            onTouchStart={startResizing}
             className="absolute w-full h-full cursor-col-resize"
           />
           

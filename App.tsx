@@ -569,6 +569,10 @@ const App: React.FC = () => {
               initialBookId={initialBookId}
               initialChapter={initialChapter}
               navigateTo={navigateTo}
+              onLayoutChange={(splitOffset, bottomSplitOffset) => {
+                setSplitOffset(splitOffset);
+                setBottomSplitOffset(bottomSplitOffset);
+              }}
             onDownloadStateChange={(downloading, progress, status, timeRemaining) => {
               setIsDownloading(downloading);
               setDownloadProgress(progress);
