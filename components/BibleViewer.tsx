@@ -987,10 +987,11 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
 
   const stopResizing = useCallback(() => setIsResizing(false), []);
 
-  const resize = useCallback((e: MouseEvent) => {
+  const resize = useCallback((e: MouseEvent | TouchEvent) => {
     if (isResizing && panelContainerRef.current) {
       const rect = panelContainerRef.current.getBoundingClientRect();
-      const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+      const clientX = 'clientX' in e ? e.clientX : e.touches[0]?.clientX || 0;
+      const percentage = ((clientX - rect.left) / rect.width) * 100;
       if (percentage >= 0 && percentage <= 100) {
         setVSplitOffset(percentage);
       }
@@ -1001,13 +1002,19 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
     if (isResizing) {
       window.addEventListener('mousemove', resize);
       window.addEventListener('mouseup', stopResizing);
+      window.addEventListener('touchmove', resize);
+      window.addEventListener('touchend', stopResizing);
     } else {
       window.removeEventListener('mousemove', resize);
       window.removeEventListener('mouseup', stopResizing);
+      window.removeEventListener('touchmove', resize);
+      window.removeEventListener('touchend', stopResizing);
     }
     return () => {
       window.removeEventListener('mousemove', resize);
       window.removeEventListener('mouseup', stopResizing);
+      window.removeEventListener('touchmove', resize);
+      window.removeEventListener('touchend', stopResizing);
     };
   }, [isResizing, resize, stopResizing]);
 
@@ -1799,6 +1806,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
           
           <div 
             onMouseDown={startResizing}
+            onTouchStart={startResizing}
             className="absolute w-full h-full cursor-col-resize"
           />
           
