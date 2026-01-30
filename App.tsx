@@ -526,7 +526,10 @@ const App: React.FC = () => {
         onRestore={handleRestoreClick}
         onClear={handleClearAll}
         onVoiceOpen={() => setIsVoiceOpen(true)}
-        onViewNotes={() => setShowNotesList(true)}
+        onViewNotes={() => {
+          setShowNotesList(true);
+          setIsSidebarOpen(false);
+        }}
         onSplitView={() => {
           setSplitOffset(50);
           setIsSidebarOpen(false);
@@ -840,8 +843,34 @@ const App: React.FC = () => {
               onSelectNote={(bookId, chapter, verses) => {
                 // Navigate to the selected note
                 setShowNotesList(false);
+                
+                // Adjust layout for optimal note viewing: horizontal divider to 50%, notes view to 100%
+                setSplitOffset(50);
+                setBottomSplitOffset(0); // 0 means notes view is maximized
+                
                 // Navigate BibleViewer to this chapter
                 setNavigateTo({ bookId, chapter, verses });
+                
+                // Also trigger selection change to open the note view like hover popup does
+                if (verses && verses.length > 0) {
+                  const selectedBook = BIBLE_BOOKS.find(b => b.id === bookId);
+                  const noteId = `${bookId}:${chapter}:${verses[0]}`;
+                  
+                  const selectionInfo = {
+                    id: noteId,
+                    bookId: bookId,
+                    bookName: selectedBook?.name || '',
+                    chapter: chapter,
+                    verseNums: verses,
+                    selectedRawText: '' // This will be populated when the BibleViewer loads
+                  };
+                  
+                  // Delay the selection change slightly to ensure BibleViewer has navigated first
+                  setTimeout(() => {
+                    handleSelectionChange(selectionInfo);
+                  }, 200);
+                }
+                
                 // Clear navigation after a short delay to allow for re-navigation to same location
                 setTimeout(() => setNavigateTo(null), 100);
               }}
