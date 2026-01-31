@@ -526,9 +526,39 @@ const App: React.FC = () => {
         onRestore={handleRestoreClick}
         onClear={handleClearAll}
         onVoiceOpen={() => setIsVoiceOpen(true)}
-        onViewNotes={() => {
-          setShowNotesList(true);
-          setIsSidebarOpen(false);
+        onViewNotes={async () => {
+          // Count all notes including AI research
+          try {
+            const verseData = await verseDataStorage.getAllData();
+            const oldNotes = await notesStorage.getAllNotes();
+            
+            // Count verse data with notes or research
+            const verseDataCount = verseData.filter((data: any) => 
+              data.personalNote || data.aiResearch.length > 0
+            ).length;
+            
+            // Count old notes
+            const oldNotesCount = Object.keys(oldNotes).filter(noteId => oldNotes[noteId]).length;
+            
+            const totalNotes = verseDataCount + oldNotesCount;
+            
+            if (totalNotes === 0) {
+              // Show toast message instead of opening empty modal
+              setToast({ 
+                message: '暂无笔记 No notes yet', 
+                type: 'info' 
+              });
+              // Don't close sidebar, just show the message
+            } else {
+              setShowNotesList(true);
+              setIsSidebarOpen(false);
+            }
+          } catch (error) {
+            console.error('Error counting notes:', error);
+            // If there's an error, just open the modal anyway
+            setShowNotesList(true);
+            setIsSidebarOpen(false);
+          }
         }}
         onSplitView={() => {
           setSplitOffset(50);
