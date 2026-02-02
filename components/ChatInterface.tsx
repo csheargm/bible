@@ -363,9 +363,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText, currentBook
     };
     
     await verseDataStorage.addAIResearch(bookId, chapter, verses, research);
-    
+
     setShowSaveModal(false);
     setResearchToSave(null);
+
+    // Trigger research update callback to refresh the notebook view
+    if (onResearchSaved) {
+      onResearchSaved();
+    }
   };
 
   const resize = useCallback((e: MouseEvent | TouchEvent) => {

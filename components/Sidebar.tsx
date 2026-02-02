@@ -11,6 +11,7 @@ interface SidebarProps {
   onVoiceOpen: () => void;
   onViewNotes?: () => void;
   onSplitView?: () => void;
+  onNotebookView?: () => void;
   notesCount: number;
   onDownloadBible?: (() => void) | null;
   onDownloadChapter?: (() => void) | null;
@@ -31,6 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onVoiceOpen,
   onViewNotes,
   onSplitView,
+  onNotebookView,
   notesCount,
   onDownloadBible,
   onDownloadChapter,
@@ -112,17 +114,41 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Split View - for iOS compatibility */}
           {onSplitView && (
-            <button 
-              onClick={onSplitView}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-50 transition-colors group mb-2"
-            >
-              <svg className="w-4 h-4 text-slate-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              <span className="flex-1 text-left text-sm font-medium text-slate-700 group-hover:text-blue-600">
-                分屏视图 Split View (50/50)
-              </span>
-            </button>
+            <>
+              <button
+                onClick={onSplitView}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-50 transition-colors group mb-2"
+              >
+                <svg className="w-4 h-4 text-slate-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <div className="flex-1 text-left">
+                  <span className="block text-sm font-medium text-slate-700 group-hover:text-blue-600">
+                    分屏视图
+                  </span>
+                  <span className="block text-xs text-slate-500">
+                    Split View (Chat + Notes)
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={onNotebookView}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 transition-colors group mb-2"
+              >
+                <svg className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <div className="flex-1 text-left">
+                  <span className="block text-sm font-medium text-slate-700 group-hover:text-indigo-600">
+                    笔记视图
+                  </span>
+                  <span className="block text-xs text-slate-500">
+                    Notes View Only
+                  </span>
+                </div>
+              </button>
+            </>
           )}
 
           <div className="h-px bg-slate-200 my-4"></div>

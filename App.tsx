@@ -35,6 +35,7 @@ const App: React.FC = () => {
   
   const [splitOffset, setSplitOffset] = useState(100); // Start with Bible view at 100%
   const [bottomSplitOffset, setBottomSplitOffset] = useState(100); // Research view at 100% (notebook hidden)
+  const [notebookActiveTab, setNotebookActiveTab] = useState<'research' | 'notes' | 'all'>('research');
   const [isResizing, setIsResizing] = useState(false);
   const [isBottomResizing, setIsBottomResizing] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
@@ -160,29 +161,37 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveNote = useCallback(async (id: string, content: string) => {
+  const handleSaveNote = useCallback(async (id: string, content: string, skipTrigger = false) => {
     try {
       // Parse the note ID to get book and chapter info
       const parts = id.split(':');
       if (parts.length >= 2) {
         const bookId = parts[0];
         const chapter = parseInt(parts[1]);
-        
+
         if (!content || content.trim() === "") {
           // Delete note from IndexedDB
           await notesStorage.deleteNote(id);
-          setDataUpdateTrigger(prev => prev + 1);
-          setNotes(prev => {
-            const updated = { ...prev };
-            delete updated[id];
-            return updated;
-          });
-          
+
+          // Only update notes state if note previously existed (to remove indicator)
+          if (notes[id]) {
+            setNotes(prev => {
+              const updated = { ...prev };
+              delete updated[id];
+              return updated;
+            });
+          }
+
+          // Only trigger sidebar stats refresh on manual saves
+          if (!skipTrigger) {
+            setDataUpdateTrigger(prev => prev + 1);
+          }
+
           // Check if there are any other notes for this chapter
-          const hasOtherNotes = Object.keys(notes).some(noteId => 
+          const hasOtherNotes = Object.keys(notes).some(noteId =>
             noteId.startsWith(`${bookId}:${chapter}:`) && noteId !== id
           );
-          
+
           // Update reading history status if no other notes remain
           if (!hasOtherNotes) {
             await readingHistory.updateChapterStatus(bookId, chapter, false, undefined);
@@ -190,9 +199,18 @@ const App: React.FC = () => {
         } else {
           // Save note to IndexedDB
           await notesStorage.saveNote(id, content);
-          setNotes(prev => ({ ...prev, [id]: content }));
-          setDataUpdateTrigger(prev => prev + 1);
-          
+
+          // Only update notes state if this is a new note (to show indicator)
+          // For existing notes, don't update state to prevent unnecessary re-renders
+          if (!notes[id]) {
+            setNotes(prev => ({ ...prev, [id]: content }));
+          }
+
+          // Only trigger sidebar stats refresh on manual saves
+          if (!skipTrigger) {
+            setDataUpdateTrigger(prev => prev + 1);
+          }
+
           // Update reading history to indicate this chapter has notes
           await readingHistory.updateChapterStatus(bookId, chapter, true, undefined);
         }
@@ -562,6 +580,14 @@ const App: React.FC = () => {
         }}
         onSplitView={() => {
           setSplitOffset(50);
+          setBottomSplitOffset(50); // Also show notes view at 50%
+          setNotebookActiveTab('research'); // Default to research tab in split view
+          setIsSidebarOpen(false);
+        }}
+        onNotebookView={() => {
+          setSplitOffset(50); // Split 50/50 horizontally (Bible left, Notes right)
+          setBottomSplitOffset(0); // Notes view at 100% of right panel
+          setNotebookActiveTab('notes'); // Auto-select "My Notes" tab
           setIsSidebarOpen(false);
         }}
         notesCount={Object.keys(notes).length}
@@ -853,10 +879,12 @@ const App: React.FC = () => {
               display: bottomSplitOffset >= 100 ? 'none' : 'block'
             }}
           >
-            <EnhancedNotebook 
-              selection={currentSelection} 
+            <EnhancedNotebook
+              selection={currentSelection}
               onSaveNote={handleSaveNote}
               initialContent={currentSelection ? (notes[currentSelection.id] || '') : ''}
+              initialTab={notebookActiveTab}
+              researchUpdateTrigger={researchUpdateTrigger}
             />
           </div>
         </div>

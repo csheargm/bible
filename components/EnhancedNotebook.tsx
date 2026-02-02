@@ -10,33 +10,59 @@ import 'katex/dist/katex.min.css';
 
 interface EnhancedNotebookProps {
   selection: SelectionInfo | null;
-  onSaveNote: (id: string, content: string) => void; // For backward compatibility
+  onSaveNote: (id: string, content: string, skipTrigger?: boolean) => void; // For backward compatibility
   initialContent: string;
+  initialTab?: TabType;
+  researchUpdateTrigger?: number;
 }
 
 type TabType = 'research' | 'notes' | 'all';
 
-const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({ 
-  selection, 
-  onSaveNote, 
-  initialContent 
+const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({
+  selection,
+  onSaveNote,
+  initialContent,
+  initialTab = 'research',
+  researchUpdateTrigger = 0
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('research');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [verseData, setVerseData] = useState<VerseData | null>(null);
   const [personalNote, setPersonalNote] = useState<string>('');
   const [isSaved, setIsSaved] = useState(true);
   const [mode, setMode] = useState<'text' | 'draw'>('text');
   const [drawingData, setDrawingData] = useState<string>('');
-  
+
   const editorRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<DrawingCanvasHandle>(null);
   const autoSaveTimer = useRef<number | null>(null);
+  const previousSelectionIdRef = useRef<string | null>(null);
+  const lastActivityTime = useRef<number>(Date.now());
+  const hasInsertedTimestamp = useRef(false);
+
+  // Update active tab when initialTab prop changes
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     if (!selection) return;
-    
-    loadVerseData();
-  }, [selection, initialContent]);
+
+    // Only reload data when switching to a different verse, not on every initialContent change
+    if (previousSelectionIdRef.current !== selection.id) {
+      previousSelectionIdRef.current = selection.id;
+      // Reset timestamp tracking when switching to new verse
+      lastActivityTime.current = Date.now();
+      hasInsertedTimestamp.current = false;
+      loadVerseData();
+    }
+  }, [selection?.id]);
+
+  // Reload data when AI research is saved
+  useEffect(() => {
+    if (selection && researchUpdateTrigger > 0) {
+      loadVerseData();
+    }
+  }, [researchUpdateTrigger]);
 
   const loadVerseData = async () => {
     if (!selection) return;
@@ -61,10 +87,18 @@ const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({
         if (editorRef.current) {
           editorRef.current.innerHTML = data.personalNote.text;
         }
+        // If note has content, don't insert timestamp
+        if (data.personalNote.text && data.personalNote.text.trim()) {
+          hasInsertedTimestamp.current = true;
+        }
       } else if (initialContent) {
         setPersonalNote(initialContent);
         if (editorRef.current) {
           editorRef.current.innerHTML = initialContent;
+        }
+        // If has initial content, don't insert timestamp
+        if (initialContent.trim()) {
+          hasInsertedTimestamp.current = true;
         }
       } else {
         // Clear the editor when switching to a verse without notes
@@ -73,25 +107,27 @@ const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({
         if (editorRef.current) {
           editorRef.current.innerHTML = '';
         }
+        // Allow timestamp insertion for empty notes
+        hasInsertedTimestamp.current = false;
       }
     }
   };
 
-  const handleSaveNote = async () => {
+  const handleSaveNote = async (isAutoSave = false) => {
     if (!selection) {
       alert('Please select a verse first before saving a note');
       return;
     }
-    
+
     const parts = selection.id.split(':');
     if (parts.length >= 3) {
       const bookId = parts[0];
       const chapter = parseInt(parts[1]);
       const verses = [parseInt(parts[2])];
-      
+
       const noteText = editorRef.current?.innerHTML || '';
       const plainText = editorRef.current?.textContent || '';
-      
+
       if (noteText.trim() || drawingData) {
         const note: PersonalNote = {
           text: noteText,
@@ -99,32 +135,145 @@ const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({
           createdAt: verseData?.personalNote?.createdAt || Date.now(),
           updatedAt: Date.now()
         };
-        
+
         await verseDataStorage.savePersonalNote(bookId, chapter, verses, note);
-        
+
         // Call the legacy save handler for backward compatibility
-        onSaveNote(selection.id, noteText);
+        // Skip trigger update during auto-save to prevent view refresh
+        onSaveNote(selection.id, noteText, isAutoSave);
+
+        // Update verseData state without reloading (to preserve cursor position)
+        setVerseData(prev => prev ? { ...prev, personalNote: note } : null);
       } else {
         await verseDataStorage.deletePersonalNote(bookId, chapter, verses);
-        onSaveNote(selection.id, '');
+        onSaveNote(selection.id, '', isAutoSave);
+
+        // Update verseData state without reloading
+        setVerseData(prev => prev ? { ...prev, personalNote: undefined } : null);
       }
-      
+
       setIsSaved(true);
-      loadVerseData(); // Reload to get updated data
+      // Don't reload data here - it resets cursor position
     }
   };
 
+  const insertTimestamp = () => {
+    if (!editorRef.current || !selection) return;
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    const dateStr = now.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+
+    // Create timestamp element
+    const timestampSpan = document.createElement('span');
+    timestampSpan.contentEditable = 'false';
+    timestampSpan.style.fontSize = '14px';
+    timestampSpan.style.color = '#94a3b8';
+    timestampSpan.style.fontWeight = 'normal';
+    timestampSpan.style.userSelect = 'none';
+    timestampSpan.textContent = `[${dateStr} ${timeStr}]`;
+
+    // Create a text node with a space after the timestamp
+    const spaceNode = document.createTextNode(' ');
+
+    // Save current selection/cursor position
+    const windowSelection = window.getSelection();
+    let savedRange: Range | null = null;
+    let cursorOffset = 0;
+    let cursorContainer: Node | null = null;
+
+    if (windowSelection && windowSelection.rangeCount > 0) {
+      savedRange = windowSelection.getRangeAt(0).cloneRange();
+      cursorOffset = savedRange.startOffset;
+      cursorContainer = savedRange.startContainer;
+    }
+
+    // Insert timestamp at the very beginning of the editor content
+    const firstChild = editorRef.current.firstChild;
+    if (firstChild) {
+      // Insert before the first child
+      editorRef.current.insertBefore(spaceNode, firstChild);
+      editorRef.current.insertBefore(timestampSpan, spaceNode);
+    } else {
+      // No content yet, just append
+      editorRef.current.appendChild(timestampSpan);
+      editorRef.current.appendChild(spaceNode);
+    }
+
+    // Restore cursor position
+    if (windowSelection && savedRange && cursorContainer) {
+      try {
+        const newRange = document.createRange();
+        newRange.setStart(cursorContainer, cursorOffset);
+        newRange.setEnd(cursorContainer, cursorOffset);
+        windowSelection.removeAllRanges();
+        windowSelection.addRange(newRange);
+      } catch (e) {
+        // If restoring fails, place cursor after the space
+        const newRange = document.createRange();
+        newRange.setStartAfter(spaceNode);
+        newRange.setEndAfter(spaceNode);
+        windowSelection.removeAllRanges();
+        windowSelection.addRange(newRange);
+      }
+    }
+
+    // Focus the editor
+    editorRef.current.focus();
+
+    hasInsertedTimestamp.current = true;
+  };
+
   const handleContentChange = () => {
+    const now = Date.now();
+    const timeSinceLastActivity = now - lastActivityTime.current;
+
+    // Get current text content from the editor directly
+    const currentHTML = editorRef.current?.innerHTML || '';
+    const currentText = currentHTML.replace(/<[^>]*>/g, '').trim();
+
+    // Check if content already starts with a timestamp pattern [YYYY年MM月DD日 HH:MM]
+    const hasTimestampAtStart = /^\[\d{4}年\d{1,2}月\d{1,2}日\s+\d{1,2}:\d{2}\]/.test(currentText);
+
+    // Insert timestamp when:
+    // 1. Starting a new note (empty note, first input)
+    // 2. After 2+ minutes of idle time
+    if (timeSinceLastActivity > 2 * 60 * 1000) {
+      // Reset the flag when idle time has passed, but only if no timestamp exists
+      if (!hasTimestampAtStart) {
+        hasInsertedTimestamp.current = false;
+      }
+    }
+
+    // Check if we should insert timestamp
+    // Only insert if: no timestamp has been inserted yet, text is not empty, and no timestamp exists at start
+    const shouldInsertTimestamp = !hasInsertedTimestamp.current && currentText.length > 0 && !hasTimestampAtStart;
+
+    if (shouldInsertTimestamp) {
+      insertTimestamp();
+    }
+
+    // Update last activity time
+    lastActivityTime.current = now;
+
     setIsSaved(false);
-    
+
     // Clear existing timer
     if (autoSaveTimer.current) {
       clearTimeout(autoSaveTimer.current);
     }
-    
+
     // Set new timer for auto-save
     autoSaveTimer.current = window.setTimeout(() => {
-      handleSaveNote();
+      handleSaveNote(true); // Pass true to indicate this is an auto-save
     }, 2000);
   };
 
@@ -186,8 +335,27 @@ const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({
     }
   };
 
-  const renderNotesTab = () => (
+  const renderNotesTab = () => {
+    // Remove the verse reference prefix from selectedRawText (e.g., "[腓立比书 Philippians 3:8]")
+    const getCleanVerseText = (text: string) => {
+      if (!text) return '';
+      // Remove the reference in brackets at the start
+      return text.replace(/^\[.*?\]\s*/, '');
+    };
+
+    return (
     <div className="notes-tab">
+      {selection?.selectedRawText && (
+        <div className="verse-quote-block">
+          <div className="verse-quote-header">
+            {selection.bookName} {selection.chapter}:{selection.verseNums.join('-')}
+          </div>
+          <div className="verse-quote-text">
+            {getCleanVerseText(selection.selectedRawText)}
+          </div>
+        </div>
+      )}
+
       {mode === 'text' ? (
         <div
           ref={editorRef}
@@ -213,29 +381,50 @@ const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({
           initialData={drawingData}
         />
       )}
-      
+
       <div className="note-toolbar">
-        <button
-          onClick={() => setMode(mode === 'text' ? 'draw' : 'text')}
-          className="toolbar-btn"
-        >
-          {mode === 'text' ? '✏️ Draw' : '📝 Text'}
-        </button>
-        
-        <button
-          onClick={handleSaveNote}
-          className="toolbar-btn"
-          style={{ background: '#4CAF50', color: 'white' }}
-        >
-          💾 Save
-        </button>
-        
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setMode(mode === 'text' ? 'draw' : 'text')}
+            className="toolbar-btn"
+          >
+            {mode === 'text' ? '✏️ Draw' : '📝 Text'}
+          </button>
+
+          <button
+            onClick={handleSaveNote}
+            className="toolbar-btn"
+            style={{ background: '#4CAF50', color: 'white' }}
+          >
+            💾 Save
+          </button>
+
+          {(personalNote || drawingData) && (
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to delete this note?')) {
+                  if (editorRef.current) {
+                    editorRef.current.innerHTML = '';
+                  }
+                  setDrawingData('');
+                  handleSaveNote(false);
+                }
+              }}
+              className="toolbar-btn"
+              style={{ background: '#ef4444', color: 'white' }}
+            >
+              🗑️ Delete
+            </button>
+          )}
+        </div>
+
         {!isSaved && (
           <span className="save-indicator">Auto-saving...</span>
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   const renderResearchTab = () => {
     
@@ -529,6 +718,28 @@ const EnhancedNotebook: React.FC<EnhancedNotebookProps> = ({
           flex: 1;
           overflow-y: auto;
           padding: 12px;
+        }
+
+        .verse-quote-block {
+          padding: 12px;
+          background: #f8f9fa;
+          border-left: 4px solid #6366f1;
+          border-radius: 4px;
+          margin-bottom: 16px;
+        }
+
+        .verse-quote-header {
+          font-size: 13px;
+          font-weight: 600;
+          color: #4f46e5;
+          margin-bottom: 8px;
+        }
+
+        .verse-quote-text {
+          font-size: 14px;
+          font-style: italic;
+          color: #475569;
+          line-height: 1.6;
         }
 
         .note-toolbar {
