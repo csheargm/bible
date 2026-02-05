@@ -42,6 +42,11 @@ export interface SeasonTheme {
   // Subtle gradient overlay (optional decorative touch)
   gradientFrom: string;
   gradientTo: string;
+  
+  // Bible reading area (paper-like background)
+  paperBg: string;
+  paperGradient: string;      // CSS background-image gradient
+  paperShadow: string;        // CSS inset box-shadow
 }
 
 export function getSeason(date: Date = new Date()): Season {
@@ -79,6 +84,18 @@ const THEMES: Record<Season, SeasonTheme> = {
     
     gradientFrom: 'rgba(232, 245, 234, 0.3)',
     gradientTo: 'rgba(244, 250, 240, 0)',
+    
+    paperBg: '#F0F8EC',
+    paperGradient: `
+      linear-gradient(180deg, #F8FDF5 0%, #EEF7E8 50%, #E8F2E2 100%),
+      radial-gradient(ellipse at top left, rgba(200, 235, 190, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(180, 225, 170, 0.3) 0%, transparent 50%)
+    `,
+    paperShadow: `
+      inset 0 0 60px rgba(180, 225, 170, 0.25),
+      inset 0 0 30px rgba(200, 235, 190, 0.15),
+      inset 2px 2px 5px rgba(0, 0, 0, 0.02)
+    `,
   },
   
   summer: {
@@ -107,6 +124,18 @@ const THEMES: Record<Season, SeasonTheme> = {
     
     gradientFrom: 'rgba(255, 243, 219, 0.3)',
     gradientTo: 'rgba(255, 251, 240, 0)',
+    
+    paperBg: '#FDF8F0',
+    paperGradient: `
+      linear-gradient(180deg, #FFFEF9 0%, #FDF6E8 50%, #FAF3E5 100%),
+      radial-gradient(ellipse at top left, rgba(252, 243, 223, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(249, 235, 195, 0.3) 0%, transparent 50%)
+    `,
+    paperShadow: `
+      inset 0 0 60px rgba(245, 225, 185, 0.25),
+      inset 0 0 30px rgba(249, 235, 195, 0.15),
+      inset 2px 2px 5px rgba(0, 0, 0, 0.02)
+    `,
   },
   
   autumn: {
@@ -135,6 +164,18 @@ const THEMES: Record<Season, SeasonTheme> = {
     
     gradientFrom: 'rgba(250, 234, 222, 0.3)',
     gradientTo: 'rgba(251, 246, 238, 0)',
+    
+    paperBg: '#FAF0E4',
+    paperGradient: `
+      linear-gradient(180deg, #FEF8F0 0%, #F8EBDA 50%, #F2E2CC 100%),
+      radial-gradient(ellipse at top left, rgba(245, 210, 165, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(240, 200, 150, 0.3) 0%, transparent 50%)
+    `,
+    paperShadow: `
+      inset 0 0 60px rgba(235, 195, 140, 0.25),
+      inset 0 0 30px rgba(240, 200, 150, 0.15),
+      inset 2px 2px 5px rgba(0, 0, 0, 0.02)
+    `,
   },
   
   winter: {
@@ -163,6 +204,18 @@ const THEMES: Record<Season, SeasonTheme> = {
     
     gradientFrom: 'rgba(224, 233, 245, 0.3)',
     gradientTo: 'rgba(243, 246, 251, 0)',
+    
+    paperBg: '#EBF0F8',
+    paperGradient: `
+      linear-gradient(180deg, #F5F8FD 0%, #E8EFF8 50%, #E0E8F3 100%),
+      radial-gradient(ellipse at top left, rgba(190, 210, 240, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(180, 200, 235, 0.3) 0%, transparent 50%)
+    `,
+    paperShadow: `
+      inset 0 0 60px rgba(180, 200, 235, 0.25),
+      inset 0 0 30px rgba(190, 210, 240, 0.15),
+      inset 2px 2px 5px rgba(0, 0, 0, 0.02)
+    `,
   },
 };
 

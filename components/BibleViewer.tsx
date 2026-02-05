@@ -1630,7 +1630,8 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
 
   return (
     <div 
-      className={`h-full flex flex-col bg-white overflow-hidden ${isTransitioning ? 'select-none' : ''}`}
+      className={`h-full flex flex-col overflow-hidden ${isTransitioning ? 'select-none' : ''}`}
+      style={{ backgroundColor: theme.background }}
       ref={containerRef} 
       onClick={handleEmptySpaceClick}
       onMouseUp={handleMouseUp}
@@ -2027,18 +2028,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             flexBasis: vSplitOffset >= 100 ? 'calc(100% - 20px)' : vSplitOffset <= 0 ? '0%' : `calc(${vSplitOffset}% - 10px)`,
             minWidth: 0,
             display: vSplitOffset <= 0 ? 'none' : 'block',
-            // Paper-like background always applied
-            backgroundColor: '#FDF8F0',
-            backgroundImage: `
-              linear-gradient(180deg, #FFFEF9 0%, #FDF6E8 50%, #FAF3E5 100%),
-              radial-gradient(ellipse at top left, rgba(252, 243, 223, 0.4) 0%, transparent 50%),
-              radial-gradient(ellipse at bottom right, rgba(249, 235, 195, 0.3) 0%, transparent 50%)
-            `,
-            boxShadow: `
-              inset 0 0 60px rgba(245, 225, 185, 0.25),
-              inset 0 0 30px rgba(249, 235, 195, 0.15),
-              inset 2px 2px 5px rgba(0, 0, 0, 0.02)
-            `,
+            // Seasonal paper-like background
+            backgroundColor: theme.paperBg,
+            backgroundImage: theme.paperGradient,
+            boxShadow: theme.paperShadow,
             position: 'relative' as const,
             // Simple page slide animation for iOS
             ...(isIOS && {
@@ -2219,18 +2212,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             flexBasis: vSplitOffset <= 0 ? 'calc(100% - 20px)' : vSplitOffset >= 100 ? '0%' : `calc(${100 - vSplitOffset}% - 10px)`,
             minWidth: 0,
             display: vSplitOffset >= 100 ? 'none' : 'block',
-            // Paper-like background always applied for English panel
-            backgroundColor: '#FDF8F0',
-            backgroundImage: `
-              linear-gradient(180deg, #FFFEF9 0%, #FDF6E8 50%, #FAF3E5 100%),
-              radial-gradient(ellipse at top right, rgba(252, 243, 223, 0.4) 0%, transparent 50%),
-              radial-gradient(ellipse at bottom left, rgba(249, 235, 195, 0.3) 0%, transparent 50%)
-            `,
-            boxShadow: `
-              inset 0 0 60px rgba(245, 225, 185, 0.25),
-              inset 0 0 30px rgba(249, 235, 195, 0.15),
-              inset -2px 2px 5px rgba(0, 0, 0, 0.02)
-            `,
+            // Seasonal paper-like background for English panel
+            backgroundColor: theme.paperBg,
+            backgroundImage: theme.paperGradient,
+            boxShadow: theme.paperShadow,
             position: 'relative' as const
           }}
         >
