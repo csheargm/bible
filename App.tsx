@@ -546,7 +546,7 @@ const App: React.FC = () => {
         onVoiceOpen={() => setIsVoiceOpen(true)}
         onNavigate={(bookId, chapter, verse) => {
           setNavigateTo({ bookId, chapter, verses: verse ? [verse] : undefined });
-          setTimeout(() => setNavigateTo(null), 100);
+          setTimeout(() => setNavigateTo(null), 1000);
         }}
         onViewNotes={async () => {
           // Count all notes including AI research

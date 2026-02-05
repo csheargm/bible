@@ -174,9 +174,28 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
       if (book) {
         setSelectedBook(book);
         setSelectedChapter(navigateTo.chapter);
-        // If specific verses are provided, select them
+        // If specific verses are provided, select them and scroll to verse
         if (navigateTo.verses && navigateTo.verses.length > 0) {
           setSelectedVerses(navigateTo.verses);
+          // Scroll to the verse after content loads
+          setTimeout(() => {
+            const verseNum = navigateTo.verses![0];
+            // Find verse element by looking for the verse number text
+            const allVerseEls = document.querySelectorAll('[class*="group/verse"]');
+            for (const el of allVerseEls) {
+              const text = el.textContent || '';
+              if (text.startsWith(String(verseNum))) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Brief highlight effect
+                (el as HTMLElement).style.transition = 'background-color 0.3s';
+                (el as HTMLElement).style.backgroundColor = 'rgb(224 231 255)'; // indigo-100
+                setTimeout(() => {
+                  (el as HTMLElement).style.backgroundColor = '';
+                }, 2000);
+                break;
+              }
+            }
+          }, 500);
         }
       }
     }
