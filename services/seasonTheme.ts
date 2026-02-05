@@ -190,4 +190,7 @@ export function applyThemeToDOM(theme: SeasonTheme): void {
   root.style.setProperty('--theme-divider-shadow', theme.dividerShadow);
   root.style.setProperty('--theme-gradient-from', theme.gradientFrom);
   root.style.setProperty('--theme-gradient-to', theme.gradientTo);
+  
+  // Override the hardcoded body background so theme shows everywhere
+  document.body.style.backgroundColor = theme.background;
 }
