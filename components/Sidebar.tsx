@@ -3,6 +3,7 @@ import { useDataStats } from '../hooks/useDataStats';
 import { bookmarkStorage, Bookmark } from '../services/bookmarkStorage';
 import { readingPlanStorage, ReadingPlanState, READING_PLANS, PlanType, ReadingPlanDay } from '../services/readingPlanStorage';
 import { useSeasonTheme } from '../hooks/useSeasonTheme';
+import { ALL_SEASONS, getThemeForSeason, getSeason } from '../services/seasonTheme';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -60,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onNavigate
 }) => {
   const { stats, loading } = useDataStats(dataUpdateTrigger);
-  const theme = useSeasonTheme();
+  const { theme, isAuto, setSeason } = useSeasonTheme();
   
   // Collapsible section state
   const [sectionsOpen, setSectionsOpen] = useState<Record<string, boolean>>({
@@ -687,12 +688,67 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {sectionsOpen.settings && (
-            <div className="space-y-1 mt-1 mb-2">
-              <div className="px-4 py-2.5">
+            <div className="space-y-3 mt-1 mb-2 px-4">
+              {/* Season Theme Picker */}
+              <div>
+                <div className="text-xs font-medium text-slate-600 mb-2">🎨 主题 Theme</div>
+                
+                {/* Auto-detect toggle */}
+                <button
+                  onClick={() => setSeason(null)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors mb-2 border ${
+                    isAuto 
+                      ? 'border-current font-semibold' 
+                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                  style={isAuto ? { 
+                    backgroundColor: theme.accentLight, 
+                    color: theme.accent,
+                    borderColor: theme.accentMedium
+                  } : {}}
+                >
+                  🔄 自动 Auto ({getThemeForSeason(getSeason()).emoji} {getThemeForSeason(getSeason()).name})
+                </button>
+                
+                {/* Season buttons */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {ALL_SEASONS.map(s => {
+                    const t = getThemeForSeason(s);
+                    const isActive = !isAuto && theme.season === s;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => setSeason(s)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all border ${
+                          isActive ? 'font-semibold shadow-sm' : 'border-slate-200 hover:shadow-sm'
+                        }`}
+                        style={isActive ? {
+                          backgroundColor: t.accentLight,
+                          borderColor: t.accentMedium,
+                          color: t.accent
+                        } : {
+                          backgroundColor: t.paperBg
+                        }}
+                      >
+                        <span className="text-base">{t.emoji}</span>
+                        <div>
+                          <div className={isActive ? '' : 'text-slate-700'}>{t.nameZh}</div>
+                          <div className={`text-[10px] ${isActive ? '' : 'text-slate-400'}`}>{t.name}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100"></div>
+
+              <div>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input 
                     type="checkbox" 
-                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    className="w-4 h-4 rounded focus:ring-2"
+                    style={{ accentColor: theme.accent }}
                     defaultChecked
                   />
                   <span className="text-sm text-slate-700">自动保存笔记 Auto-save notes</span>

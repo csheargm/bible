@@ -47,7 +47,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
   navigateTo,
   onLayoutChange
 }) => {
-  const theme = useSeasonTheme();
+  const { theme } = useSeasonTheme();
   
   const [selectedBook, setSelectedBook] = useState<Book>(() => {
     if (initialBookId) {

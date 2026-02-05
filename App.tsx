@@ -20,7 +20,8 @@ import { useSeasonThemeInit, SeasonThemeProvider } from './hooks/useSeasonTheme'
 
 const App: React.FC = () => {
   // Seasonal theme
-  const theme = useSeasonThemeInit();
+  const themeCtx = useSeasonThemeInit();
+  const theme = themeCtx.theme;
   
   // Device detection for responsive layout
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
@@ -503,7 +504,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <SeasonThemeProvider value={theme}>
+    <SeasonThemeProvider value={themeCtx}>
     <div 
       className="flex flex-col h-screen w-screen overflow-hidden"
       style={{

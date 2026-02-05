@@ -219,8 +219,44 @@ const THEMES: Record<Season, SeasonTheme> = {
   },
 };
 
+export const ALL_SEASONS: Season[] = ['spring', 'summer', 'autumn', 'winter'];
+
+const STORAGE_KEY = 'bible-app-season-override';
+
+/**
+ * Get the user's saved theme preference, or null for auto-detect.
+ */
+export function getSavedSeasonOverride(): Season | null {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && ALL_SEASONS.includes(saved as Season)) {
+      return saved as Season;
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Save a manual season override. Pass null to revert to auto-detect.
+ */
+export function saveSeasonOverride(season: Season | null): void {
+  try {
+    if (season === null) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_KEY, season);
+    }
+  } catch {}
+}
+
 export function getSeasonTheme(date?: Date): SeasonTheme {
+  const override = getSavedSeasonOverride();
+  if (override) return THEMES[override];
   return THEMES[getSeason(date)];
+}
+
+export function getThemeForSeason(season: Season): SeasonTheme {
+  return THEMES[season];
 }
 
 /**
