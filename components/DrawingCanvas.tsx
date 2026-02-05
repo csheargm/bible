@@ -196,10 +196,12 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
     ) => {
       ctx.save();
 
-      // Pressure-sensitive width
+      // Pressure-sensitive width — optimized for Apple Pencil
+      // Lower floor (0.15) means light touches still register
+      // Higher multiplier (1.7) gives more dynamic range
       let lineWidth = size;
       const p = to.pressure > 0 ? to.pressure : 0.5;
-      lineWidth = size * (0.3 + p * 1.4);
+      lineWidth = size * (0.15 + p * 1.7);
 
       // Tilt → calligraphy effect (pen only)
       if (tool === 'pen' && (Math.abs(to.tiltX) > 15 || Math.abs(to.tiltY) > 15)) {
@@ -314,7 +316,10 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
 
     const handlePointerDown = useCallback((e: PointerEvent) => {
       if (!isWritingMode) return;
-      if (!e.isPrimary) return;
+      
+      // Allow pen input regardless of isPrimary (Apple Pencil is primary, but be safe)
+      // For touch/mouse, only allow primary to avoid multi-touch conflicts
+      if (e.pointerType !== 'pen' && !e.isPrimary) return;
 
       // Apple Pencil double-tap detection (pen only)
       if (e.pointerType === 'pen') {
@@ -329,6 +334,7 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
       }
 
       e.preventDefault();
+      e.stopPropagation();
       isDrawingRef.current = true;
       currentPointsRef.current = [getPoint(e)];
       needsRedrawRef.current = false;
@@ -339,12 +345,15 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
 
     const handlePointerMove = useCallback((e: PointerEvent) => {
       if (!isDrawingRef.current) return;
-      if (!e.isPrimary) return;
+      // Don't check isPrimary for move events — we're already drawing
       e.preventDefault();
+      e.stopPropagation();
 
       // getCoalescedEvents() gives us ALL intermediate samples from Apple Pencil
       // (up to 240Hz) instead of just the events that align with display refresh
-      const events = (e as any).getCoalescedEvents?.() ?? [e];
+      // This is critical for smooth handwriting — without it, fast strokes lose points
+      const coalescedEvents = (e as any).getCoalescedEvents?.();
+      const events = coalescedEvents && coalescedEvents.length > 0 ? coalescedEvents : [e];
 
       for (const coalescedEvent of events) {
         const point = getPoint(coalescedEvent);
@@ -357,6 +366,7 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
     const handlePointerUp = useCallback((e: PointerEvent) => {
       if (!isDrawingRef.current) return;
       e.preventDefault();
+      e.stopPropagation();
 
       isDrawingRef.current = false;
       cancelAnimationFrame(rafIdRef.current);
@@ -388,6 +398,15 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
       fullRedraw();
     }, [fullRedraw]);
 
+    // ── Prevent context menu and text selection in writing mode ──
+
+    const preventDefaultHandler = useCallback((e: Event) => {
+      if (isWritingMode) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, [isWritingMode]);
+
     // ── Attach pointer events (native, not React) for best performance ──
 
     useEffect(() => {
@@ -399,15 +418,21 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
       canvas.addEventListener('pointermove', handlePointerMove, { passive: false });
       canvas.addEventListener('pointerup', handlePointerUp, { passive: false });
       canvas.addEventListener('pointercancel', handlePointerCancel, { passive: false });
+      
+      // Prevent context menu and text selection when in writing mode
+      canvas.addEventListener('contextmenu', preventDefaultHandler, { passive: false });
+      canvas.addEventListener('selectstart', preventDefaultHandler, { passive: false });
 
       return () => {
         canvas.removeEventListener('pointerdown', handlePointerDown);
         canvas.removeEventListener('pointermove', handlePointerMove);
         canvas.removeEventListener('pointerup', handlePointerUp);
         canvas.removeEventListener('pointercancel', handlePointerCancel);
+        canvas.removeEventListener('contextmenu', preventDefaultHandler);
+        canvas.removeEventListener('selectstart', preventDefaultHandler);
         cancelAnimationFrame(rafIdRef.current);
       };
-    }, [handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel]);
+    }, [handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, preventDefaultHandler]);
 
     // ── Render ──────────────────────────────────────────────────────────
 
@@ -420,12 +445,19 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
         style={{
           height: canvasHeight ? `${canvasHeight}px` : '100%',
           touchAction: isWritingMode ? 'none' : 'auto',
+          // Prevent iOS text selection callouts and magnifier
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
           userSelect: 'none',
+          // @ts-ignore - Safari-specific property
+          WebkitUserModify: 'read-only',
           pointerEvents: 'auto',
           cursor: isWritingMode ? 'crosshair' : 'grab',
+          // Prevent iOS tap highlight
+          WebkitTapHighlightColor: 'transparent',
         }}
+        // Prevent long-press context menu on iOS
+        onContextMenu={(e) => isWritingMode && e.preventDefault()}
       />
     );
   }

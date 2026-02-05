@@ -2072,6 +2072,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
           ref={leftScrollRef}
           onScroll={() => handleScroll('left')}
           onTouchStart={handleAnnotationTouchStart}
+          onContextMenu={isAnnotationMode ? (e) => e.preventDefault() : undefined}
           className="overflow-y-auto p-4 md:p-6 space-y-0.5 font-serif-sc border-r border-slate-100"
           style={{ 
             flexGrow: vSplitOffset >= 100 ? 1 : 0,
@@ -2090,10 +2091,13 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
               transition: isPageFlipping ? 'transform 0.3s ease-out' : 'none',
               willChange: isSwiping ? 'transform' : 'auto'
             }),
-            // In annotation mode, disable touch scrolling (pen draws, two-finger scrolls)
+            // In annotation mode, disable touch scrolling and text selection
             ...(isAnnotationMode && {
               touchAction: 'pan-y pinch-zoom',
               overflowY: 'auto' as const,
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
             })
           }}
         >
@@ -2123,7 +2127,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                 }`}
                 style={{ 
                   cursor: 'default',
-                  userSelect: 'text',
+                  // Disable text selection in annotation mode to prevent iOS callout
+                  userSelect: isAnnotationMode ? 'none' : 'text',
+                  WebkitUserSelect: isAnnotationMode ? 'none' : 'text',
+                  WebkitTouchCallout: isAnnotationMode ? 'none' : 'default',
                   ...(selectedVerses.includes(v.verse) ? { backgroundColor: theme.verseHighlight, borderColor: theme.verseBorder } : {})
                 }}
               >
@@ -2272,6 +2279,7 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
           ref={rightScrollRef}
           onScroll={() => handleScroll('right')}
           onTouchStart={handleAnnotationTouchStart}
+          onContextMenu={isAnnotationMode ? (e) => e.preventDefault() : undefined}
           className="overflow-y-auto p-4 md:p-6 space-y-0.5 font-sans"
           style={{ 
             flexGrow: vSplitOffset <= 0 ? 1 : 0,
@@ -2284,9 +2292,12 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
             backgroundImage: theme.paperGradient,
             boxShadow: theme.paperShadow,
             position: 'relative' as const,
-            // In annotation mode, adjust touch behavior
+            // In annotation mode, disable text selection and touch callouts
             ...(isAnnotationMode && {
               touchAction: 'pan-y pinch-zoom',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
             })
           }}
         >
@@ -2316,7 +2327,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                 }`}
                 style={{ 
                   cursor: 'default',
-                  userSelect: 'text',
+                  // Disable text selection in annotation mode to prevent iOS callout
+                  userSelect: isAnnotationMode ? 'none' : 'text',
+                  WebkitUserSelect: isAnnotationMode ? 'none' : 'text',
+                  WebkitTouchCallout: isAnnotationMode ? 'none' : 'default',
                   ...(selectedVerses.includes(v.verse) ? { backgroundColor: theme.verseHighlight, borderColor: theme.verseBorder } : {})
                 }}
               >

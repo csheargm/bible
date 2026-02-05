@@ -223,14 +223,24 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
   // Active annotation mode
   return (
     <>
-      {/* Drawing canvas overlay */}
+      {/* Drawing canvas overlay — blocks all text interaction when active */}
       <div
         className="absolute inset-0 z-20"
         style={{
           height: `${totalHeight}px`,
           // Don't block text visibility
           mixBlendMode: 'multiply',
+          // Prevent text selection on underlying content
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          // Capture all pointer events to prevent text selection bubbling
+          pointerEvents: 'auto',
         }}
+        // Prevent context menu on the overlay container
+        onContextMenu={(e) => e.preventDefault()}
+        // Prevent any selection start events
+        onSelectCapture={(e) => e.preventDefault()}
       >
         <DrawingCanvas
           ref={canvasRef}
