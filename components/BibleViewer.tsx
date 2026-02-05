@@ -2037,10 +2037,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                   className={`inline-block ml-1 align-middle transition-all ${
                     bookmarkedVerses.has(`${selectedBook.id}:${selectedChapter}:${v.verse}`)
                       ? 'text-red-400 opacity-100'
-                      : 'text-slate-300 opacity-0 group-hover/verse:opacity-60 hover:!opacity-100'
+                      : 'text-slate-300 opacity-40 sm:opacity-0 sm:group-hover/verse:opacity-60 hover:!opacity-100'
                   }`}
                   title={bookmarkedVerses.has(`${selectedBook.id}:${selectedChapter}:${v.verse}`) ? '取消收藏 Remove bookmark' : '收藏 Bookmark'}
-                  style={{ fontSize: '12px', lineHeight: 1, padding: '2px' }}
+                  style={{ fontSize: '14px', lineHeight: 1, padding: '4px' }}
                 >
                   {bookmarkedVerses.has(`${selectedBook.id}:${selectedChapter}:${v.verse}`) ? '♥' : '♡'}
                 </button>
@@ -2215,10 +2215,10 @@ const BibleViewer: React.FC<BibleViewerProps> = ({
                   className={`inline-block ml-1 align-middle transition-all ${
                     bookmarkedVerses.has(`${selectedBook.id}:${selectedChapter}:${v.verse}`)
                       ? 'text-red-400 opacity-100'
-                      : 'text-slate-300 opacity-0 group-hover/verse:opacity-60 hover:!opacity-100'
+                      : 'text-slate-300 opacity-40 sm:opacity-0 sm:group-hover/verse:opacity-60 hover:!opacity-100'
                   }`}
                   title={bookmarkedVerses.has(`${selectedBook.id}:${selectedChapter}:${v.verse}`) ? '取消收藏 Remove bookmark' : '收藏 Bookmark'}
-                  style={{ fontSize: '12px', lineHeight: 1, padding: '2px' }}
+                  style={{ fontSize: '14px', lineHeight: 1, padding: '4px' }}
                 >
                   {bookmarkedVerses.has(`${selectedBook.id}:${selectedChapter}:${v.verse}`) ? '♥' : '♡'}
                 </button>
