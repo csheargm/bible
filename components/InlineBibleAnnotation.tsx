@@ -270,25 +270,28 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
         </div>
       )}
 
-      {/* Expand handle */}
+      {/* Expand handle - drag to add margin space for notes */}
       <div
         className="absolute left-0 right-0 z-30 flex items-center justify-center cursor-ns-resize group"
         style={{
           top: `${totalHeight - 2}px`,
-          height: '24px',
+          height: '32px',
           touchAction: 'none',
         }}
         onPointerDown={handleExpandPointerDown}
       >
         <div
-          className="flex items-center gap-1 px-4 py-1 rounded-full transition-all"
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full transition-all shadow-sm"
           style={{
-            backgroundColor: isDragging ? 'rgba(99, 102, 241, 0.15)' : 'rgba(139, 115, 85, 0.08)',
-            border: `1px solid ${isDragging ? 'rgba(99, 102, 241, 0.3)' : 'rgba(139, 115, 85, 0.15)'}`,
+            backgroundColor: isDragging ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.9)',
+            border: `1px solid ${isDragging ? 'rgba(99, 102, 241, 0.4)' : 'rgba(139, 115, 85, 0.25)'}`,
           }}
         >
-          <span className="text-[10px] font-medium" style={{ color: 'rgba(139, 115, 85, 0.5)' }}>
-            ↕ {extraHeight > 0 ? `+${extraHeight}px` : '展开'}
+          <svg className="w-3 h-3" style={{ color: 'rgba(139, 115, 85, 0.6)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+          <span className="text-[10px] font-medium" style={{ color: 'rgba(139, 115, 85, 0.7)' }}>
+            {extraHeight > 0 ? `留白 +${Math.round(extraHeight)}px` : '拖动添加留白 Drag to add margin'}
           </span>
         </div>
       </div>
@@ -303,28 +306,30 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
           borderColor: 'rgba(0, 0, 0, 0.08)',
         }}
       >
-        {/* Tool buttons */}
+        {/* Tool buttons with labels */}
         {([
-          { tool: 'pen' as const, icon: '✒️', label: 'Pen' },
-          { tool: 'highlighter' as const, icon: '🖍️', label: 'Highlight' },
-          { tool: 'marker' as const, icon: '🖊️', label: 'Marker' },
-          { tool: 'eraser' as const, icon: '🧹', label: 'Eraser' },
-        ]).map(({ tool, icon, label }) => (
+          { tool: 'pen' as const, icon: '✒️', label: '笔', labelEn: 'Pen' },
+          { tool: 'highlighter' as const, icon: '🖍️', label: '荧光', labelEn: 'Highlight' },
+          { tool: 'marker' as const, icon: '🖊️', label: '马克', labelEn: 'Marker' },
+          { tool: 'eraser' as const, icon: '🧹', label: '擦除', labelEn: 'Eraser' },
+        ]).map(({ tool, icon, label, labelEn }) => (
           <button
             key={tool}
             onClick={() => selectTool(tool)}
-            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-all ${
               currentTool === tool
-                ? 'shadow-md scale-110'
+                ? 'shadow-md'
                 : 'hover:bg-slate-100 opacity-70'
             }`}
             style={{
               backgroundColor: currentTool === tool ? `${accentColor}20` : undefined,
               border: currentTool === tool ? `2px solid ${accentColor}` : '2px solid transparent',
+              minWidth: '44px',
             }}
-            title={label}
+            title={labelEn}
           >
-            <span className="text-base">{icon}</span>
+            <span className="text-base leading-none">{icon}</span>
+            <span className="text-[9px] font-medium text-slate-500 mt-0.5">{label}</span>
           </button>
         ))}
 
@@ -335,13 +340,15 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowColorPicker(!showColorPicker)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-all"
+            className="flex flex-col items-center justify-center px-2 py-1 rounded-xl hover:bg-slate-100 transition-all"
+            style={{ minWidth: '44px' }}
             title="Color"
           >
             <div
               className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
               style={{ backgroundColor: currentColor }}
             />
+            <span className="text-[9px] font-medium text-slate-500 mt-0.5">颜色</span>
           </button>
           {showColorPicker && (
             <div
@@ -368,19 +375,22 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
         </div>
 
         {/* Size slider */}
-        <input
-          type="range"
-          min={1}
-          max={12}
-          value={currentSize}
-          onChange={(e) => {
-            const size = parseInt(e.target.value);
-            setCurrentSize(size);
-            canvasRef.current?.setSize(size);
-          }}
-          className="w-16 h-1 accent-slate-500"
-          title={`Size: ${currentSize}`}
-        />
+        <div className="flex flex-col items-center px-1">
+          <input
+            type="range"
+            min={1}
+            max={12}
+            value={currentSize}
+            onChange={(e) => {
+              const size = parseInt(e.target.value);
+              setCurrentSize(size);
+              canvasRef.current?.setSize(size);
+            }}
+            className="w-16 h-1 accent-slate-500"
+            title={`Size: ${currentSize}`}
+          />
+          <span className="text-[9px] font-medium text-slate-500 mt-1">粗细 {currentSize}</span>
+        </div>
 
         {/* Divider */}
         <div className="w-[1px] h-6 bg-slate-200 mx-1" />
@@ -388,23 +398,27 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
         {/* Undo */}
         <button
           onClick={handleUndo}
-          className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-all"
+          className="flex flex-col items-center justify-center px-2 py-1 rounded-xl hover:bg-slate-100 transition-all"
+          style={{ minWidth: '44px' }}
           title="Undo 撤销"
         >
           <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4" />
           </svg>
+          <span className="text-[9px] font-medium text-slate-500 mt-0.5">撤销</span>
         </button>
 
         {/* Clear all */}
         <button
           onClick={handleClearAll}
-          className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+          className="flex flex-col items-center justify-center px-2 py-1 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+          style={{ minWidth: '44px' }}
           title="Clear all 清除全部"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
+          <span className="text-[9px] font-medium text-slate-500 mt-0.5">清除</span>
         </button>
       </div>
     </>
