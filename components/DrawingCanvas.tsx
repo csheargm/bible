@@ -404,7 +404,29 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
       if (isWritingMode) {
         e.preventDefault();
         e.stopPropagation();
+        return false;
       }
+    }, [isWritingMode]);
+
+    // ── Touch event handlers for iOS — prevent context menu but allow pointer events ──
+    // Note: We only preventDefault to stop iOS context menu, but don't stopPropagation
+    // so that pointer events still fire for drawing
+    
+    const handleTouchStart = useCallback((e: TouchEvent) => {
+      if (!isWritingMode) return;
+      // Only prevent default to stop iOS context menu - let pointer events handle drawing
+      e.preventDefault();
+    }, [isWritingMode]);
+
+    const handleTouchMove = useCallback((e: TouchEvent) => {
+      if (!isWritingMode) return;
+      // Prevent default to stop scrolling and iOS behaviors
+      e.preventDefault();
+    }, [isWritingMode]);
+
+    const handleTouchEnd = useCallback((e: TouchEvent) => {
+      if (!isWritingMode) return;
+      e.preventDefault();
     }, [isWritingMode]);
 
     // ── Attach pointer events (native, not React) for best performance ──
@@ -419,20 +441,32 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
       canvas.addEventListener('pointerup', handlePointerUp, { passive: false });
       canvas.addEventListener('pointercancel', handlePointerCancel, { passive: false });
       
+      // Touch events for iOS — these fire before pointer events and can prevent context menu
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+      
       // Prevent context menu and text selection when in writing mode
-      canvas.addEventListener('contextmenu', preventDefaultHandler, { passive: false });
-      canvas.addEventListener('selectstart', preventDefaultHandler, { passive: false });
+      canvas.addEventListener('contextmenu', preventDefaultHandler, { passive: false, capture: true });
+      canvas.addEventListener('selectstart', preventDefaultHandler, { passive: false, capture: true });
+      
+      // iOS-specific: prevent the callout menu
+      canvas.addEventListener('webkitmouseforcedown', preventDefaultHandler, { passive: false });
 
       return () => {
         canvas.removeEventListener('pointerdown', handlePointerDown);
         canvas.removeEventListener('pointermove', handlePointerMove);
         canvas.removeEventListener('pointerup', handlePointerUp);
         canvas.removeEventListener('pointercancel', handlePointerCancel);
+        canvas.removeEventListener('touchstart', handleTouchStart);
+        canvas.removeEventListener('touchmove', handleTouchMove);
+        canvas.removeEventListener('touchend', handleTouchEnd);
         canvas.removeEventListener('contextmenu', preventDefaultHandler);
         canvas.removeEventListener('selectstart', preventDefaultHandler);
+        canvas.removeEventListener('webkitmouseforcedown', preventDefaultHandler);
         cancelAnimationFrame(rafIdRef.current);
       };
-    }, [handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, preventDefaultHandler]);
+    }, [handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleTouchStart, handleTouchMove, handleTouchEnd, preventDefaultHandler]);
 
     // ── Render ──────────────────────────────────────────────────────────
 
@@ -444,20 +478,25 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(
         }`}
         style={{
           height: canvasHeight ? `${canvasHeight}px` : '100%',
+          // Critical: completely disable all touch gestures except our handlers
           touchAction: isWritingMode ? 'none' : 'auto',
           // Prevent iOS text selection callouts and magnifier
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
           userSelect: 'none',
-          // @ts-ignore - Safari-specific property
+          // @ts-ignore - Safari-specific property to prevent text editing UI
           WebkitUserModify: 'read-only',
           pointerEvents: 'auto',
           cursor: isWritingMode ? 'crosshair' : 'grab',
           // Prevent iOS tap highlight
           WebkitTapHighlightColor: 'transparent',
+          // Prevent text selection highlight
+          caretColor: 'transparent',
         }}
         // Prevent long-press context menu on iOS
-        onContextMenu={(e) => isWritingMode && e.preventDefault()}
+        onContextMenu={(e) => { if (isWritingMode) { e.preventDefault(); e.stopPropagation(); } }}
+        // Additional touch prevention
+        onTouchStartCapture={(e) => { if (isWritingMode) e.stopPropagation(); }}
       />
     );
   }

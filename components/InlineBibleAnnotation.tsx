@@ -118,6 +118,42 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
     }
   }, [isActive]);
 
+  // ── Document-level prevention of iOS context menu when annotation mode is active ──
+  useEffect(() => {
+    if (!isActive) return;
+
+    const preventContextMenu = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const preventSelection = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    // Capture phase to intercept before any other handlers
+    document.addEventListener('contextmenu', preventContextMenu, { capture: true, passive: false });
+    document.addEventListener('selectstart', preventSelection, { capture: true, passive: false });
+    
+    // Also add to body for iOS
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.userSelect = 'none';
+    // @ts-ignore
+    document.body.style.webkitTouchCallout = 'none';
+
+    return () => {
+      document.removeEventListener('contextmenu', preventContextMenu, { capture: true });
+      document.removeEventListener('selectstart', preventSelection, { capture: true });
+      document.body.style.webkitUserSelect = '';
+      document.body.style.userSelect = '';
+      // @ts-ignore
+      document.body.style.webkitTouchCallout = '';
+    };
+  }, [isActive]);
+
   // ── Auto-save on tool change or deactivation ─────────────────────────
 
   const handleCanvasChange = useCallback((data: string) => {
@@ -241,6 +277,11 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
         onContextMenu={(e) => e.preventDefault()}
         // Prevent any selection start events
         onSelectCapture={(e) => e.preventDefault()}
+        // Prevent touch-based text selection on iOS
+        onTouchStart={(e) => {
+          // Allow the touch but prevent default text selection behavior
+          e.stopPropagation();
+        }}
       >
         <DrawingCanvas
           ref={canvasRef}
@@ -270,28 +311,52 @@ const InlineBibleAnnotation: React.FC<InlineBibleAnnotationProps> = ({
         </div>
       )}
 
-      {/* Expand handle - drag to add margin space for notes */}
+      {/* Expand handle - FIXED position on right side middle for visibility */}
       <div
-        className="absolute left-0 right-0 z-30 flex items-center justify-center cursor-ns-resize group"
+        className="fixed z-50 cursor-ns-resize"
         style={{
-          top: `${totalHeight - 2}px`,
-          height: '32px',
+          right: '8px',
+          top: '50%',
+          transform: 'translateY(-50%)',
           touchAction: 'none',
         }}
         onPointerDown={handleExpandPointerDown}
       >
         <div
-          className="flex items-center gap-2 px-4 py-1.5 rounded-full transition-all shadow-sm"
+          className="flex flex-col items-center gap-1 px-2 py-3 rounded-xl transition-all shadow-lg"
           style={{
-            backgroundColor: isDragging ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.9)',
-            border: `1px solid ${isDragging ? 'rgba(99, 102, 241, 0.4)' : 'rgba(139, 115, 85, 0.25)'}`,
+            backgroundColor: isDragging ? 'rgba(99, 102, 241, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            border: `2px solid ${isDragging ? 'rgba(99, 102, 241, 0.8)' : 'rgba(139, 115, 85, 0.3)'}`,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
           }}
         >
-          <svg className="w-3 h-3" style={{ color: 'rgba(139, 115, 85, 0.6)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg 
+            className="w-5 h-5" 
+            style={{ color: isDragging ? 'white' : 'rgba(139, 115, 85, 0.7)' }} 
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
           </svg>
-          <span className="text-[10px] font-medium" style={{ color: 'rgba(139, 115, 85, 0.7)' }}>
-            {extraHeight > 0 ? `留白 +${Math.round(extraHeight)}px` : '拖动添加留白 Drag to add margin'}
+          <span 
+            className="text-[10px] font-bold writing-vertical"
+            style={{ 
+              color: isDragging ? 'white' : 'rgba(139, 115, 85, 0.8)',
+              writingMode: 'vertical-rl',
+              textOrientation: 'mixed',
+            }}
+          >
+            {extraHeight > 0 ? `+${Math.round(extraHeight)}` : '留白'}
+          </span>
+          <span 
+            className="text-[8px] writing-vertical"
+            style={{ 
+              color: isDragging ? 'rgba(255,255,255,0.8)' : 'rgba(139, 115, 85, 0.5)',
+              writingMode: 'vertical-rl',
+              textOrientation: 'mixed',
+            }}
+          >
+            拖动
           </span>
         </div>
       </div>
