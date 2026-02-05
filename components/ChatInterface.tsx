@@ -404,7 +404,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText, currentBook
 
   return (
     <div className="h-full flex flex-col relative bg-slate-50" ref={containerRef}>
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Chinese Side */}
         <div 
           ref={zhScrollRef} 
@@ -554,8 +554,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ incomingText, currentBook
         </div>
       </div>
 
-      {/* Input area */}
-      <div className="p-4 bg-white border-t border-slate-200 z-10 shadow-lg">
+      {/* Input area - relative position needed for z-index to work */}
+      <div className="p-4 bg-white border-t border-slate-200 z-10 shadow-lg relative flex-shrink-0">
         <div className="max-w-5xl mx-auto flex flex-col gap-2">
           <div className="relative">
             <textarea

@@ -16,8 +16,13 @@ import { BIBLE_BOOKS } from './constants';
 import { Toast } from './components/Toast';
 import { useDataStats } from './hooks/useDataStats';
 import NotesList from './components/NotesList';
+import { useSeasonThemeInit, SeasonThemeProvider } from './hooks/useSeasonTheme';
 
 const App: React.FC = () => {
+  // Seasonal theme
+  const themeCtx = useSeasonThemeInit();
+  const theme = themeCtx.theme;
+  
   // Device detection for responsive layout
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
   
@@ -488,8 +493,8 @@ const App: React.FC = () => {
 
   if (hasKey === false) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen p-6 text-center" style={{ backgroundColor: '#FAF8F3' }}>
-        <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mb-6 shadow-lg">圣</div>
+      <div className="flex flex-col items-center justify-center h-screen p-6 text-center" style={{ backgroundColor: theme.background }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mb-6 shadow-lg" style={{ backgroundColor: theme.accent }}>圣</div>
         <h1 className="text-2xl font-bold text-slate-800 mb-2">欢迎使用圣经学研</h1>
         <p className="text-slate-600 max-w-md mb-8">为了使用高级图像和视频创作功能，您需要选择一个已开启结算的 API 密钥。</p>
         <button onClick={handleSelectKey} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all active:scale-95">选择 API 密钥</button>
@@ -499,6 +504,7 @@ const App: React.FC = () => {
   }
 
   return (
+    <SeasonThemeProvider value={themeCtx}>
     <div 
       className="flex flex-col h-screen w-screen overflow-hidden"
       style={{
@@ -514,7 +520,7 @@ const App: React.FC = () => {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#FAF8F3' // Paper-like color similar to iOS Books
+        backgroundColor: theme.background
       }}
     >
       <input 
@@ -544,6 +550,10 @@ const App: React.FC = () => {
         onRestore={handleRestoreClick}
         onClear={handleClearAll}
         onVoiceOpen={() => setIsVoiceOpen(true)}
+        onNavigate={(bookId, chapter, verse) => {
+          setNavigateTo({ bookId, chapter, verses: verse ? [verse] : undefined });
+          setTimeout(() => setNavigateTo(null), 1000);
+        }}
         onViewNotes={async () => {
           // Count all notes including AI research
           try {
@@ -670,9 +680,10 @@ const App: React.FC = () => {
         >
           {/* Visible divider bar */}
           <div 
-            className={`absolute w-full ${isResizing ? 'h-3 bg-indigo-500' : 'h-2 bg-slate-400 group-hover:bg-indigo-400 group-hover:h-3'} transition-all`}
+            className={`absolute w-full ${isResizing ? 'h-3' : 'h-2 bg-slate-400 group-hover:h-3'} transition-all`}
             style={{
-              boxShadow: isResizing ? '0 2px 4px rgba(99, 102, 241, 0.3)' : '0 1px 2px rgba(0, 0, 0, 0.05)',
+              backgroundColor: isResizing ? theme.dividerActive : undefined,
+              boxShadow: isResizing ? `0 2px 4px ${theme.dividerShadow}` : '0 1px 2px rgba(0, 0, 0, 0.05)',
               zIndex: 10 // Behind the controls
             }}
           ></div>
@@ -802,9 +813,10 @@ const App: React.FC = () => {
           >
             {/* Visible divider bar */}
             <div 
-              className={`absolute h-full ${isBottomResizing ? 'w-2 bg-indigo-500' : 'w-1 bg-slate-200 group-hover:bg-indigo-400 group-hover:w-2'} transition-all`}
+              className={`absolute h-full ${isBottomResizing ? 'w-2' : 'w-1 bg-slate-200 group-hover:w-2'} transition-all`}
               style={{
-                boxShadow: isBottomResizing ? '2px 0 4px rgba(99, 102, 241, 0.3), -2px 0 4px rgba(99, 102, 241, 0.3)' : '1px 0 2px rgba(0, 0, 0, 0.05)'
+                backgroundColor: isBottomResizing ? theme.dividerActive : undefined,
+                boxShadow: isBottomResizing ? `2px 0 4px ${theme.dividerShadow}, -2px 0 4px ${theme.dividerShadow}` : '1px 0 2px rgba(0, 0, 0, 0.05)'
               }}
             ></div>
             
@@ -950,6 +962,7 @@ const App: React.FC = () => {
         />
       )}
     </div>
+    </SeasonThemeProvider>
   );
 };
 
